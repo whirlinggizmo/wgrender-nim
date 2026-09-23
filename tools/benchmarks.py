@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""wgrender-nim against the C: the `simple` example compiled Nim -> C -> one wasm,
+beside wgrender's own C build of it.
+
+    tools/benchmarks.py          build it, measure it, write bench/results.json and
+                                 docs/benchmarks.md
+    tools/benchmarks.py --doc    only regenerate docs/benchmarks.md
+
+The harness is wgrender's (tools/bench/measure.py) and so is the C baseline: run
+wgrender's tools/benchmarks.py first, on the same machine, so its bench/results.json
+is there to compare against. wgrender is the submodule, or WGRENDER_DIR.
+
+Run by hand, not in CI. Commit bench/results.json and docs/benchmarks.md afterwards.
+"""
+import os
+import pathlib
+import subprocess
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+HARNESS = pathlib.Path(os.environ.get('WGRENDER_DIR') or ROOT / 'project/lib/wgrender-c') / 'tools/bench'
+if not (HARNESS / 'measure.py').is_file():
+    sys.exit(f'no wgrender benchmark harness at {HARNESS} (git submodule update --init, or set WGRENDER_DIR)')
+sys.path.insert(0, str(HARNESS))
+import measure  # noqa: E402
+
+WGRENDER, SOURCE = measure.find_wgrender(ROOT)
+RESULTS = ROOT / 'bench/results.json'
+DOC = ROOT / 'docs/benchmarks.md'
+EXAMPLE = ROOT / 'examples/simple'
+
+
+def measure_all():
+    measure.run(['nim', 'build', 'web'], cwd=EXAMPLE, env=dict(measure.WEB_VARS, WGRENDER_DIR=str(WGRENDER)))
+    nim = subprocess.run(['nim', '--version'], capture_output=True, text=True).stdout.splitlines()[0]
+    site = EXAMPLE / 'out/web'
+    page = {'probe': 'simple.js'}
+    config = {
+        'id': 'nim', 'label': 'Nim -> C', 'project': 'wgrender-nim', 'example': 'simple',
+        'toolchain': nim.split(' [')[0].replace(' Compiler Version', ''),
+        'sizes': measure.sizes([site / 'simple.wasm', site / 'simple.js']),
+        'frame': measure.frame(site, 'nim', **page),
+        'gc': measure.gc(site, 'nim', **page),
+    }
+    return measure.write_results(RESULTS, 'wgrender-nim', measure.wgrender_info(WGRENDER, SOURCE), [config])
+
+
+def main():
+    baseline_path = WGRENDER / 'bench/results.json'
+    if not baseline_path.is_file():
+        sys.exit(f'no C baseline at {baseline_path}: run {WGRENDER / "tools/benchmarks.py"} first')
+    baseline = measure.load_results(baseline_path)
+    ours = measure.load_results(RESULTS) if '--doc' in sys.argv[1:] else measure_all()
+    lead = ('`simple` compiled Nim -> C -> one wasm, beside the C. The C row and the call costs '
+            'are wgrender\'s baseline (its `bench/results.json`); every binding is collected in '
+            'wgrender\'s `docs/benchmarks.md`.')
+    DOC.parent.mkdir(exist_ok=True)
+    DOC.write_text(measure.render_doc('wgrender-nim benchmarks', lead, [baseline, ours], baseline,
+                                      'tools/benchmarks.py'))
+    print(f'wrote {DOC}')
+
+
+if __name__ == '__main__':
+    main()

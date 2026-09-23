@@ -1,4 +1,5 @@
-/out/
-/.nimcache/
-# `nim c -r simple.nim` leaves the binary here
-/simple
+out/
+.nimcache/
+__pycache__/
+# `nim c -r simple.nim` leaves the binary beside it
+/examples/simple/simple

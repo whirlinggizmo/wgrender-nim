@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "project": "wgrender-nim",
+  "environment": {
+    "date": "2026-09-23",
+    "machine": "13th Gen Intel(R) Core(TM) i9-13900HX, Linux",
+    "browser": "Brave Browser 153.1.95.104",
+    "node": "v22.16.0",
+    "emcc": "5.0.7"
+  },
+  "wgrender": {
+    "commit": "4d68abd",
+    "dirty": false,
+    "source": "submodule"
+  },
+  "configurations": [
+    {
+      "id": "nim",
+      "label": "Nim -> C",
+      "project": "wgrender-nim",
+      "example": "simple",
+      "toolchain": "Nim 2.2.12",
+      "sizes": {
+        "files": [
+          {
+            "name": "simple.wasm",
+            "kind": "wasm",
+            "raw": 716210,
+            "gzip": 302642,
+            "brotli": 244798
+          },
+          {
+            "name": "simple.js",
+            "kind": "js",
+            "raw": 65516,
+            "gzip": 23350,
+            "brotli": 20742
+          }
+        ],
+        "total": {
+          "raw": 781726,
+          "gzip": 325992,
+          "brotli": 265540
+        }
+      },
+      "frame": {
+        "label": "nim",
+        "frames": 481,
+        "median": 16.66,
+        "p95": 16.67,
+        "overCap": 0,
+        "scriptMs": 0.513,
+        "taskMs": 0.815,
+        "scriptRuns": [
+          0.506,
+          0.513,
+          0.52
+        ]
+      },
+      "gc": {
+        "label": "nim",
+        "frames": 607,
+        "uncapped": false,
+        "allocBytesPerFrame": 1153,
+        "allocMBPerMinute": 4,
+        "collections": 1,
+        "freedMB": 0.48,
+        "heapStartMB": 8.6,
+        "heapEndMB": 8.8,
+        "frameMs": {
+          "median": 16.66,
+          "p99": 16.67,
+          "max": 16.67
+        },
+        "gcFrameMs": {
+          "median": 16.66,
+          "max": 16.66
+        },
+        "loadMs": 0,
+        "lateFrames": {
+          "over20": 0,
+          "over33": 0,
+          "pct": 0
+        },
+        "gc": {
+          "totalMs": 0,
+          "pctOfWall": 0,
+          "minor": {
+            "count": 0,
+            "medianMs": null,
+            "maxMs": null,
+            "totalMs": 0
+          },
+          "major": {
+            "count": 0,
+            "medianMs": null,
+            "maxMs": null,
+            "totalMs": 0
+          }
+        },
+        "bufferFull": false
+      }
+    }
+  ]
+}

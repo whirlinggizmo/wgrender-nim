@@ -1,5 +1,5 @@
 ## Raw wgrender bindings: the C API as is (C types, C names). Most code wants the
-## wrappers in `sk` instead (Nim types, closures).
+## wrappers in `wgr` instead (Nim types, closures).
 ## Declarations come straight from wgrender's public headers (`header: "wgr.h"`),
 ## so the C compiler checks every prototype and struct layout for us.
 

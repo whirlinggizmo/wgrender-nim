@@ -1,4 +1,4 @@
-## wgrender for Nim: the C API (sk/raw) wrapped in stock Nim types.
+## wgrender for Nim: the C API (wgr/raw) wrapped in stock Nim types.
 ##
 ## - strings, ints and floats instead of cstring / cint / cfloat
 ## - Nim enums and a `set` of window flags instead of C constants

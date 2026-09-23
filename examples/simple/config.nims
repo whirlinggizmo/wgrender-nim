@@ -8,19 +8,22 @@
 #                         gzip-compressed responses)
 #   nim clean             remove out/ and .nimcache/
 #
-# `nim c -r simple.nim` still builds and runs the desktop version in place.
+# Run these from this directory. `nim c -r simple.nim` still builds and runs the
+# desktop version in place.
 #
 # Web options are wgrender's make variables, read from the environment:
 #   BACKEND=webgl2|webgpu   WEB_THREADS=1|0   WEB_DEBUG=0|1   (e.g. BACKEND=webgpu nim build web)
-# Override the wgrender location with WGRENDER_DIR=/path/to/wgrender.
+# wgrender is the repository's submodule (project/lib/wgrender-c, pinned); set
+# WGRENDER_DIR=/path/to/wgrender to build against a checkout of your own instead.
 
 import std/[os, strutils]
 
 const
   thisDir = currentSourcePath().parentDir()
+  repoDir = thisDir / "../.."
   mainEntry = thisDir / "simple.nim"
   outDir = thisDir / "out"
-  wgrenderDefault = thisDir / "../../github/whirlinggizmo/wgrender-c"
+  wgrenderDefault = repoDir / "project/lib/wgrender-c"
 
 let wgrenderDir = absolutePath(getEnv("WGRENDER_DIR", wgrenderDefault))
 
@@ -47,6 +50,7 @@ proc webFlags(): tuple[lib, cflags, ldflags: string] =
     raise newException(ValueError, "could not read wgrender web flags:\n" & output)
 
 switch("hints", "off")
+switch("path", repoDir) # the binding: wgr.nim, wgr/raw.nim
 
 when defined(emscripten):
   let web = webFlags()
@@ -71,7 +75,8 @@ else:
   switch("nimcache", thisDir / ".nimcache/desktop")
   switch("define", "wgrAssetBase=" & wgrenderDir / "examples/assets")
   switch("passC", "-I" & wgrenderDir / "include")
-  switch("passL", wgrenderDir / "build/desktop/libwgrender.a")
+  # wgrender's native library directory is named for the OS (build/linux, build/macos)
+  switch("passL", wgrenderDir / (when defined(macosx): "build/macos" else: "build/linux") / "libwgrender.a")
   for lib in ["GL", "X11", "Xi", "Xcursor", "Xrandr", "asound", "dl", "m", "pthread"]:
     switch("passL", "-l" & lib)
 
