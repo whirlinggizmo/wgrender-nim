@@ -13,8 +13,11 @@
 #
 # Web options are wgrender's make variables, read from the environment:
 #   BACKEND=webgl2|webgpu   WEB_THREADS=1|0   WEB_DEBUG=0|1   (e.g. BACKEND=webgpu nim build web)
-# wgrender is the repository's submodule (project/lib/wgrender-c, pinned); set
-# WGRENDER_DIR=/path/to/wgrender to build against a checkout of your own instead.
+# wgrender, in order (the same as wgrender-hx):
+#   1. WGRENDER_DIR=/path/to/wgrender
+#   2. ../wgrender-c beside this repository: a checkout you are working on, so a change
+#      there is tried here without pushing it and moving the pin
+#   3. project/lib/wgrender-c, the pinned submodule, which is what a clone has
 
 import std/[os, strutils]
 
@@ -23,9 +26,13 @@ const
   repoDir = thisDir / "../.."
   mainEntry = thisDir / "simple.nim"
   outDir = thisDir / "out"
-  wgrenderDefault = repoDir / "project/lib/wgrender-c"
+  wgrenderSibling = repoDir / "../wgrender-c"
+  wgrenderSubmodule = repoDir / "project/lib/wgrender-c"
 
-let wgrenderDir = absolutePath(getEnv("WGRENDER_DIR", wgrenderDefault))
+let wgrenderDir = absolutePath(
+  if existsEnv("WGRENDER_DIR"): getEnv("WGRENDER_DIR")
+  elif fileExists(wgrenderSibling / "include/wgr.h"): wgrenderSibling
+  else: wgrenderSubmodule)
 
 # wgrender's make variables for the web build, passed through to every make call.
 proc webMakeVars(): string =

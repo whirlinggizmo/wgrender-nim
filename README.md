@@ -24,8 +24,11 @@ nim serve                # http://localhost:8000/
 
 The web build needs Emscripten, and wgrender's own requirements (see its README).
 `BACKEND`, `WEB_THREADS` and `WEB_DEBUG` are wgrender's make variables, read from the
-environment. `WGRENDER_DIR=/path/to/wgrender-c` builds against a checkout of your own
-instead of the submodule.
+environment.
+
+wgrender is found in this order, as wgrender-hx finds it: `WGRENDER_DIR`, then a
+`../wgrender-c` checkout beside this one (so a change there is tried here without
+pushing it and moving the pin), then the pinned submodule, which is what a clone has.
 
 ## Benchmarks
 

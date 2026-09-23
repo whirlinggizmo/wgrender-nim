@@ -8,7 +8,9 @@ beside wgrender's own C build of it.
 
 The harness is wgrender's (tools/bench/measure.py) and so is the C baseline: run
 wgrender's tools/benchmarks.py first, on the same machine, so its bench/results.json
-is there to compare against. wgrender is the submodule, or WGRENDER_DIR.
+is there to compare against. wgrender is found as the example's build finds it:
+WGRENDER_DIR, else ../wgrender-c beside this repository, else the submodule.
+results.json records which.
 
 Run by hand, not in CI. Commit bench/results.json and docs/benchmarks.md afterwards.
 """
@@ -18,13 +20,22 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-HARNESS = pathlib.Path(os.environ.get('WGRENDER_DIR') or ROOT / 'project/lib/wgrender-c') / 'tools/bench'
-if not (HARNESS / 'measure.py').is_file():
-    sys.exit(f'no wgrender benchmark harness at {HARNESS} (git submodule update --init, or set WGRENDER_DIR)')
-sys.path.insert(0, str(HARNESS))
-import measure  # noqa: E402
 
-WGRENDER, SOURCE = measure.find_wgrender(ROOT)
+
+def find_wgrender():
+    """The same order as examples/simple/config.nims."""
+    if os.environ.get('WGRENDER_DIR'):
+        return pathlib.Path(os.environ['WGRENDER_DIR']).resolve(), 'WGRENDER_DIR'
+    if (ROOT / '../wgrender-c/include/wgr.h').is_file():
+        return (ROOT / '../wgrender-c').resolve(), 'sibling checkout'
+    return (ROOT / 'project/lib/wgrender-c').resolve(), 'submodule'
+
+
+WGRENDER, SOURCE = find_wgrender()
+if not (WGRENDER / 'tools/bench/measure.py').is_file():
+    sys.exit(f'no wgrender benchmark harness in {WGRENDER} (git submodule update --init, or set WGRENDER_DIR)')
+sys.path.insert(0, str(WGRENDER / 'tools/bench'))
+import measure  # noqa: E402
 RESULTS = ROOT / 'bench/results.json'
 DOC = ROOT / 'docs/benchmarks.md'
 EXAMPLE = ROOT / 'examples/simple'
