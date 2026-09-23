@@ -9,9 +9,9 @@
     "emcc": "5.0.7"
   },
   "wgrender": {
-    "commit": "4d68abd",
+    "commit": "cb1bc58",
     "dirty": false,
-    "source": "submodule"
+    "source": "sibling checkout"
   },
   "configurations": [
     {
@@ -27,7 +27,7 @@
             "kind": "wasm",
             "raw": 716210,
             "gzip": 302642,
-            "brotli": 244798
+            "brotli": 245087
           },
           {
             "name": "simple.js",
@@ -35,36 +35,50 @@
             "raw": 65516,
             "gzip": 23350,
             "brotli": 20742
+          },
+          {
+            "name": "index.html",
+            "kind": "page",
+            "raw": 8612,
+            "gzip": 3592,
+            "brotli": 2914
+          },
+          {
+            "name": "examples.json",
+            "kind": "page",
+            "raw": 11,
+            "gzip": 31,
+            "brotli": 15
           }
         ],
         "total": {
-          "raw": 781726,
-          "gzip": 325992,
-          "brotli": 265540
+          "raw": 790349,
+          "gzip": 329615,
+          "brotli": 268758
         }
       },
       "frame": {
         "label": "nim",
-        "frames": 481,
+        "frames": 480,
         "median": 16.66,
         "p95": 16.67,
         "overCap": 0,
-        "scriptMs": 0.513,
-        "taskMs": 0.815,
+        "scriptMs": 0.518,
+        "taskMs": 0.817,
         "scriptRuns": [
-          0.506,
-          0.513,
-          0.52
+          0.459,
+          0.518,
+          0.531
         ]
       },
       "gc": {
         "label": "nim",
         "frames": 607,
         "uncapped": false,
-        "allocBytesPerFrame": 1153,
-        "allocMBPerMinute": 4,
-        "collections": 1,
-        "freedMB": 0.48,
+        "allocBytesPerFrame": 331,
+        "allocMBPerMinute": 1.1,
+        "collections": 0,
+        "freedMB": 0,
         "heapStartMB": 8.6,
         "heapEndMB": 8.8,
         "frameMs": {
@@ -72,10 +86,7 @@
           "p99": 16.67,
           "max": 16.67
         },
-        "gcFrameMs": {
-          "median": 16.66,
-          "max": 16.66
-        },
+        "gcFrameMs": null,
         "loadMs": 0,
         "lateFrames": {
           "over20": 0,

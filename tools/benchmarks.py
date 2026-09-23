@@ -49,7 +49,9 @@ def measure_all():
     config = {
         'id': 'nim', 'label': 'Nim -> C', 'project': 'wgrender-nim', 'example': 'simple',
         'toolchain': nim.split(' [')[0].replace(' Compiler Version', ''),
-        'sizes': measure.sizes([site / 'simple.wasm', site / 'simple.js']),
+        # the page is wgrender's example shell, which fetches examples.json for its picker
+        'sizes': measure.sizes([site / 'simple.wasm', site / 'simple.js',
+                                site / 'index.html', site / 'examples.json']),
         'frame': measure.frame(site, 'nim', **page),
         'gc': measure.gc(site, 'nim', **page),
     }
