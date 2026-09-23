@@ -9,7 +9,7 @@
     "emcc": "5.0.7"
   },
   "wgrender": {
-    "commit": "cb1bc58",
+    "commit": "9b8fae3",
     "dirty": false,
     "source": "sibling checkout"
   },
@@ -59,26 +59,26 @@
       },
       "frame": {
         "label": "nim",
-        "frames": 480,
+        "frames": 481,
         "median": 16.66,
         "p95": 16.67,
         "overCap": 0,
-        "scriptMs": 0.518,
-        "taskMs": 0.817,
+        "scriptMs": 0.494,
+        "taskMs": 0.794,
         "scriptRuns": [
-          0.459,
-          0.518,
-          0.531
+          0.472,
+          0.494,
+          0.503
         ]
       },
       "gc": {
         "label": "nim",
         "frames": 607,
         "uncapped": false,
-        "allocBytesPerFrame": 331,
-        "allocMBPerMinute": 1.1,
-        "collections": 0,
-        "freedMB": 0,
+        "allocBytesPerFrame": 1156,
+        "allocMBPerMinute": 4,
+        "collections": 1,
+        "freedMB": 0.48,
         "heapStartMB": 8.6,
         "heapEndMB": 8.8,
         "frameMs": {
@@ -86,7 +86,10 @@
           "p99": 16.67,
           "max": 16.67
         },
-        "gcFrameMs": null,
+        "gcFrameMs": {
+          "median": 16.66,
+          "max": 16.66
+        },
         "loadMs": 0,
         "lateFrames": {
           "over20": 0,
