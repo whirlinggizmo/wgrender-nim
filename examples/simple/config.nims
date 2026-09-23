@@ -8,7 +8,7 @@
 #                         gzip-compressed responses)
 #   nim clean             remove out/ and .nimcache/
 #
-# Run these from this directory. `nim c -r simple.nim` still builds and runs the
+# Run these from this directory. `nim c -r src/simple.nim` still builds and runs the
 # desktop version in place.
 #
 # Web options are wgrender's make variables, read from the environment:
@@ -24,7 +24,7 @@ import std/[os, strutils]
 const
   thisDir = currentSourcePath().parentDir()
   repoDir = thisDir / "../.."
-  mainEntry = thisDir / "simple.nim"
+  mainEntry = thisDir / "src/simple.nim"
   outDir = thisDir / "out"
   wgrenderSibling = repoDir / "../wgrender-c"
   wgrenderSubmodule = repoDir / "project/lib/wgrender-c"
@@ -57,7 +57,7 @@ proc webFlags(): tuple[lib, cflags, ldflags: string] =
     raise newException(ValueError, "could not read wgrender web flags:\n" & output)
 
 switch("hints", "off")
-switch("path", repoDir) # the binding: wgr.nim, wgr/raw.nim
+switch("path", repoDir / "src") # the binding: wgr.nim, wgr/raw.nim
 
 when defined(emscripten):
   let web = webFlags()

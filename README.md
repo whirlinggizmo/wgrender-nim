@@ -5,9 +5,11 @@ the `simple` example needs, which makes it wgrender's Nim entry in the
 cross-binding benchmarks. It is not a complete binding yet.
 
 ```
-wgr.nim                  the binding: Nim types, a distinct type per handle kind, closures
-wgr/raw.nim              the C API as is, declared against wgrender's headers
-examples/simple/         the port of wgrender's examples/simple.c, and its build (config.nims)
+wgrender.nimble          the package: srcDir src, `import wgr`
+src/wgr.nim              the binding: Nim types, a distinct type per handle kind, closures
+src/wgr/raw.nim          the C API as is, declared against wgrender's headers
+examples/simple/         the port of wgrender's examples/simple.c (src/simple.nim) and its
+                         build (config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
 ```
