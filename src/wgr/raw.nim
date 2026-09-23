@@ -101,6 +101,12 @@ proc wgr_model_set_animation*(model: WgrHandle; index: cint): bool
 proc wgr_model_set_animation_speed*(model: WgrHandle; speed: cfloat): bool
 proc wgr_model_set_animation_loop*(model: WgrHandle; loop: bool): bool
 proc wgr_model_set_transform*(model: WgrHandle; px, py, pz, rx, ry, rz, sx, sy, sz: cfloat): bool
+proc wgr_model_set_position*(handle: WgrHandle; x, y, z: cfloat): bool
+proc wgr_model_set_rotation*(handle: WgrHandle; x, y, z: cfloat): bool
+proc wgr_model_set_scale*(handle: WgrHandle; x, y, z: cfloat): bool
+proc wgr_model_get_position*(handle: WgrHandle): CVec3
+proc wgr_model_get_rotation*(handle: WgrHandle): CVec3
+proc wgr_model_get_scale*(handle: WgrHandle): CVec3
 proc wgr_model_set_tint*(model: WgrHandle; color: WgrColor): bool
 proc wgr_model_animate*(model: WgrHandle; dt: cfloat): bool
 
@@ -110,6 +116,12 @@ proc wgr_texture_release*(texture: WgrHandle)
 proc wgr_sprite3d_create*(texture: WgrHandle): WgrHandle
 proc wgr_sprite3d_set_facing*(sprite: WgrHandle; facing: cint): bool
 proc wgr_sprite3d_set_transform*(sprite: WgrHandle; px, py, pz, rx, ry, rz, sx, sy, sz: cfloat): bool
+proc wgr_sprite3d_set_position*(handle: WgrHandle; x, y, z: cfloat): bool
+proc wgr_sprite3d_set_rotation*(handle: WgrHandle; x, y, z: cfloat): bool
+proc wgr_sprite3d_set_scale*(handle: WgrHandle; x, y, z: cfloat): bool
+proc wgr_sprite3d_get_position*(handle: WgrHandle): CVec3
+proc wgr_sprite3d_get_rotation*(handle: WgrHandle): CVec3
+proc wgr_sprite3d_get_scale*(handle: WgrHandle): CVec3
 proc wgr_sprite3d_set_tint*(sprite: WgrHandle; color: WgrColor): bool
 proc wgr_sprite3d_destroy*(sprite: WgrHandle)
 

@@ -314,11 +314,22 @@ proc modelSetAnimationSpeed*(model: Model; speed: float): bool {.discardable.} =
   wgr_model_set_animation_speed(model.Handle, speed.cfloat)
 proc modelSetAnimationLoop*(model: Model; loop: bool): bool {.discardable.} =
   wgr_model_set_animation_loop(model.Handle, loop)
-proc modelSetTransform*(model: Model; position: Vec3; rotation: Vec3 = (0.0, 0.0, 0.0);
-                        scale: Vec3 = (1.0, 1.0, 1.0)): bool {.discardable.} =
-  ## rotation in radians
+proc modelSetTransform*(model: Model; position, rotation, scale: Vec3): bool {.discardable.} =
+  ## position, rotation (radians) and scale in one call: the cheapest way to move it every frame
   wgr_model_set_transform(model.Handle, position.x, position.y, position.z,
                          rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
+proc modelSetPosition*(model: Model; value: Vec3): bool {.discardable.} =
+  ## one part of the transform, leaving the others as they are
+  wgr_model_set_position(model.Handle, value.x, value.y, value.z)
+proc modelSetRotation*(model: Model; value: Vec3): bool {.discardable.} =
+  ## one part of the transform, leaving the others as they are (radians)
+  wgr_model_set_rotation(model.Handle, value.x, value.y, value.z)
+proc modelSetScale*(model: Model; value: Vec3): bool {.discardable.} =
+  ## one part of the transform, leaving the others as they are
+  wgr_model_set_scale(model.Handle, value.x, value.y, value.z)
+proc modelGetPosition*(model: Model): Vec3 = wgr_model_get_position(model.Handle).toNim
+proc modelGetRotation*(model: Model): Vec3 = wgr_model_get_rotation(model.Handle).toNim
+proc modelGetScale*(model: Model): Vec3 = wgr_model_get_scale(model.Handle).toNim
 proc modelSetTint*(model: Model; color: Color): bool {.discardable.} =
   wgr_model_set_tint(model.Handle, color)
 proc modelAnimate*(model: Model; dt: float): bool {.discardable.} =
@@ -331,11 +342,22 @@ proc textureRelease*(texture: Texture) = wgr_texture_release(texture.Handle)
 proc sprite3dCreate*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.Handle))
 proc sprite3dSetFacing*(sprite: Sprite3d; facing: SpriteFacing): bool {.discardable.} =
   wgr_sprite3d_set_facing(sprite.Handle, ord(facing).cint)
-proc sprite3dSetTransform*(sprite: Sprite3d; position: Vec3; rotation: Vec3 = (0.0, 0.0, 0.0);
-                           scale: Vec3 = (1.0, 1.0, 1.0)): bool {.discardable.} =
-  ## rotation in radians
+proc sprite3dSetTransform*(sprite: Sprite3d; position, rotation, scale: Vec3): bool {.discardable.} =
+  ## position, rotation (radians) and scale in one call: the cheapest way to move it every frame
   wgr_sprite3d_set_transform(sprite.Handle, position.x, position.y, position.z,
                             rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
+proc sprite3dSetPosition*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
+  ## one part of the transform, leaving the others as they are
+  wgr_sprite3d_set_position(sprite.Handle, value.x, value.y, value.z)
+proc sprite3dSetRotation*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
+  ## one part of the transform, leaving the others as they are (radians)
+  wgr_sprite3d_set_rotation(sprite.Handle, value.x, value.y, value.z)
+proc sprite3dSetScale*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
+  ## one part of the transform, leaving the others as they are
+  wgr_sprite3d_set_scale(sprite.Handle, value.x, value.y, value.z)
+proc sprite3dGetPosition*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_position(sprite.Handle).toNim
+proc sprite3dGetRotation*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_rotation(sprite.Handle).toNim
+proc sprite3dGetScale*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_scale(sprite.Handle).toNim
 proc sprite3dSetTint*(sprite: Sprite3d; color: Color): bool {.discardable.} =
   wgr_sprite3d_set_tint(sprite.Handle, color)
 proc sprite3dDestroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.Handle)

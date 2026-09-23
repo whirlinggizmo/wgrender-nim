@@ -70,7 +70,7 @@ proc loadAssets() =
     modelSetAnimation(g.model, 1)
     modelSetAnimationSpeed(g.model, 1.0)
     modelSetAnimationLoop(g.model, true)
-    modelSetTransform(g.model, (0.0, 0.0, 0.0))
+    modelSetPosition(g.model, (0.0, 0.0, 0.0))
     modelSetTint(g.model, ColorRaywhite)
     sceneAdd(g.scene, g.model)
 
@@ -79,7 +79,7 @@ proc loadAssets() =
     g.sprite = sprite3dCreate(texture)
     textureRelease(texture) # the sprite holds its own reference
     sprite3dSetFacing(g.sprite, SpriteFacing.Free) # librl's default: oriented by its rotation
-    sprite3dSetTransform(g.sprite, (0.0, SpriteYOffset, 0.0))
+    sprite3dSetPosition(g.sprite, (0.0, SpriteYOffset, 0.0))
     sprite3dSetTint(g.sprite, ColorRaywhite)
     sceneAdd(g.scene, g.sprite)
 
@@ -124,7 +124,7 @@ proc update(dt: float) =
     modelAnimate(g.model, dt)
   if not g.sprite.isNone:
     let y = sin(g.elapsed * BobSpeed) * BobHeight + SpriteYOffset
-    sprite3dSetTransform(g.sprite, (0.0, y, 0.0))
+    sprite3dSetPosition(g.sprite, (0.0, y, 0.0))
 
 proc updatePickMessage(mouse: MouseState) =
   let pick = scenePick(g.scene, mouse.x.float, mouse.y.float)
