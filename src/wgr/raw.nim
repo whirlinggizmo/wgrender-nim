@@ -111,6 +111,7 @@ proc wgr_sprite3d_create*(texture: WgrHandle): WgrHandle
 proc wgr_sprite3d_set_facing*(sprite: WgrHandle; facing: cint): bool
 proc wgr_sprite3d_set_transform*(sprite: WgrHandle; px, py, pz, rx, ry, rz, sx, sy, sz: cfloat): bool
 proc wgr_sprite3d_set_tint*(sprite: WgrHandle; color: WgrColor): bool
+proc wgr_sprite3d_destroy*(sprite: WgrHandle)
 
 # fonts / text
 proc wgr_font_create*(path: cstring): WgrHandle

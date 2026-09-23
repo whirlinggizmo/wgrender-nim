@@ -338,6 +338,7 @@ proc sprite3dSetTransform*(sprite: Sprite3d; position: Vec3; rotation: Vec3 = (0
                             rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
 proc sprite3dSetTint*(sprite: Sprite3d; color: Color): bool {.discardable.} =
   wgr_sprite3d_set_tint(sprite.Handle, color)
+proc sprite3dDestroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.Handle)
 
 # --- fonts / text ---
 

@@ -42,7 +42,8 @@ EXAMPLE = ROOT / 'examples/simple'
 
 
 def measure_all():
-    measure.run(['nim', 'build', 'web'], cwd=EXAMPLE, env=dict(measure.WEB_VARS, WGRENDER_DIR=str(WGRENDER)))
+    for example in (EXAMPLE, ROOT / 'examples/stress'):
+        measure.run(['nim', 'build', 'web'], cwd=example, env=dict(measure.WEB_VARS, WGRENDER_DIR=str(WGRENDER)))
     nim = subprocess.run(['nim', '--version'], capture_output=True, text=True).stdout.splitlines()[0]
     site = EXAMPLE / 'out/web'
     page = {'probe': 'simple.js'}
@@ -54,6 +55,7 @@ def measure_all():
                                 site / 'index.html', site / 'examples.json']),
         'frame': measure.frame(site, 'nim', **page),
         'gc': measure.gc(site, 'nim', **page),
+        'stress': measure.stress(ROOT / 'examples/stress/out/web', 'nim', '/?n={n}', 'stress.js'),
     }
     return measure.write_results(RESULTS, 'wgrender-nim', measure.wgrender_info(WGRENDER, SOURCE), [config])
 

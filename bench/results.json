@@ -9,7 +9,7 @@
     "emcc": "5.0.7"
   },
   "wgrender": {
-    "commit": "9b8fae3",
+    "commit": "76a3807",
     "dirty": false,
     "source": "sibling checkout"
   },
@@ -63,22 +63,22 @@
         "median": 16.66,
         "p95": 16.67,
         "overCap": 0,
-        "scriptMs": 0.494,
-        "taskMs": 0.794,
+        "scriptMs": 0.498,
+        "taskMs": 0.792,
         "scriptRuns": [
-          0.472,
-          0.494,
-          0.503
+          0.466,
+          0.498,
+          0.515
         ]
       },
       "gc": {
         "label": "nim",
-        "frames": 607,
+        "frames": 608,
         "uncapped": false,
-        "allocBytesPerFrame": 1156,
-        "allocMBPerMinute": 4,
-        "collections": 1,
-        "freedMB": 0.48,
+        "allocBytesPerFrame": 983,
+        "allocMBPerMinute": 3.4,
+        "collections": 2,
+        "freedMB": 0.38,
         "heapStartMB": 8.6,
         "heapEndMB": 8.8,
         "frameMs": {
@@ -87,8 +87,8 @@
           "max": 16.67
         },
         "gcFrameMs": {
-          "median": 16.66,
-          "max": 16.66
+          "median": 16.67,
+          "max": 16.67
         },
         "loadMs": 0,
         "lateFrames": {
@@ -113,7 +113,183 @@
           }
         },
         "bufferFull": false
-      }
+      },
+      "stress": [
+        {
+          "n": 1000,
+          "frame": {
+            "label": "nim-1000",
+            "frames": 480,
+            "median": 16.66,
+            "p95": 16.67,
+            "overCap": 0,
+            "scriptMs": 0.458,
+            "taskMs": 0.546,
+            "scriptRuns": [
+              0.443,
+              0.458,
+              0.462
+            ]
+          },
+          "gc": {
+            "label": "nim-1000",
+            "frames": 607,
+            "uncapped": false,
+            "allocBytesPerFrame": 412,
+            "allocMBPerMinute": 1.4,
+            "collections": 0,
+            "freedMB": 0,
+            "heapStartMB": 1.9,
+            "heapEndMB": 2.1,
+            "frameMs": {
+              "median": 16.66,
+              "p99": 16.67,
+              "max": 16.67
+            },
+            "gcFrameMs": null,
+            "loadMs": 8,
+            "lateFrames": {
+              "over20": 0,
+              "over33": 0,
+              "pct": 0
+            },
+            "gc": {
+              "totalMs": 0.6,
+              "pctOfWall": 0.01,
+              "minor": {
+                "count": 1,
+                "medianMs": 0.57,
+                "maxMs": 0.57,
+                "totalMs": 0.6
+              },
+              "major": {
+                "count": 0,
+                "medianMs": null,
+                "maxMs": null,
+                "totalMs": 0
+              }
+            },
+            "bufferFull": false
+          }
+        },
+        {
+          "n": 5000,
+          "frame": {
+            "label": "nim-5000",
+            "frames": 480,
+            "median": 16.66,
+            "p95": 16.67,
+            "overCap": 0,
+            "scriptMs": 1.453,
+            "taskMs": 1.535,
+            "scriptRuns": [
+              1.424,
+              1.453,
+              1.477
+            ]
+          },
+          "gc": {
+            "label": "nim-5000",
+            "frames": 608,
+            "uncapped": false,
+            "allocBytesPerFrame": 415,
+            "allocMBPerMinute": 1.4,
+            "collections": 0,
+            "freedMB": 0,
+            "heapStartMB": 1.9,
+            "heapEndMB": 2.2,
+            "frameMs": {
+              "median": 16.66,
+              "p99": 16.67,
+              "max": 16.67
+            },
+            "gcFrameMs": null,
+            "loadMs": 8,
+            "lateFrames": {
+              "over20": 0,
+              "over33": 0,
+              "pct": 0
+            },
+            "gc": {
+              "totalMs": 0.3,
+              "pctOfWall": 0,
+              "minor": {
+                "count": 1,
+                "medianMs": 0.34,
+                "maxMs": 0.34,
+                "totalMs": 0.3
+              },
+              "major": {
+                "count": 0,
+                "medianMs": null,
+                "maxMs": null,
+                "totalMs": 0
+              }
+            },
+            "bufferFull": false
+          }
+        },
+        {
+          "n": 10000,
+          "frame": {
+            "label": "nim-10000",
+            "frames": 480,
+            "median": 16.66,
+            "p95": 16.67,
+            "overCap": 0,
+            "scriptMs": 2.739,
+            "taskMs": 2.827,
+            "scriptRuns": [
+              2.708,
+              2.739,
+              2.887
+            ]
+          },
+          "gc": {
+            "label": "nim-10000",
+            "frames": 606,
+            "uncapped": false,
+            "allocBytesPerFrame": 413,
+            "allocMBPerMinute": 1.4,
+            "collections": 1,
+            "freedMB": 0.43,
+            "heapStartMB": 2.3,
+            "heapEndMB": 2.1,
+            "frameMs": {
+              "median": 16.66,
+              "p99": 16.67,
+              "max": 16.67
+            },
+            "gcFrameMs": {
+              "median": 16.66,
+              "max": 16.66
+            },
+            "loadMs": 8,
+            "lateFrames": {
+              "over20": 0,
+              "over33": 0,
+              "pct": 0
+            },
+            "gc": {
+              "totalMs": 0.4,
+              "pctOfWall": 0,
+              "minor": {
+                "count": 1,
+                "medianMs": 0.41,
+                "maxMs": 0.41,
+                "totalMs": 0.4
+              },
+              "major": {
+                "count": 0,
+                "medianMs": null,
+                "maxMs": null,
+                "totalMs": 0
+              }
+            },
+            "bufferFull": false
+          }
+        }
+      ]
     }
   ]
 }
