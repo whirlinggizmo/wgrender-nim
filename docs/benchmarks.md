@@ -24,23 +24,25 @@ Chrome's own CPU accounting over 8 s of steady state (`tools/bench/bench.mjs`), 
 
 ## JS heap and GC
 
-V8's traced collections over 10 s at 60 fps (`tools/bench/gcbench.mjs`). Only the JS heap: a configuration that runs inside the wasm allocates nothing there itself, so its reading is the page's noise floor, and a collector inside the wasm (hxcpp's) is not visible here at all.
+V8's traced collections over 10 s at 60 fps (`tools/bench/gcbench.mjs`). Only the JS heap: a collector inside the wasm (hxcpp's) is not visible here at all.
 
-| Configuration | alloc (B/frame) | alloc (MB/min) | collections traced | late frames |
-| --- | ---: | ---: | --- | ---: |
-| C | 667 | 2.3 | none | 0 |
-| Nim -> C | 331 | 1.1 | none | 0 |
+| Configuration | game code runs in | alloc (B/frame) | alloc (MB/min) | collections traced | late frames |
+| --- | --- | ---: | ---: | --- | ---: |
+| C | wasm | 667 | 2.3 | none | 0 |
+| Nim -> C | wasm | 331 | 1.1 | none | 0 |
+
+Code running in the wasm allocates nothing on the JS heap itself, so those rows (331 to 667 B/frame here) are the page's own noise: Emscripten's glue, the page and the measuring. Their order means nothing.
 
 ## Calls from a JS guest
 
 What a call from JS into wgrender's wasm costs, against the same call made inside the wasm (`tools/bench/callbench`, node v22.16.0, median of 7 runs of 5,000,000 calls). The JS side marshals as a JS guest binding does: struct results read into a new object, strings copied in with stringToUTF8.
 
-| Shape | like | JS -> wasm (ns) | inside wasm (ns) | boundary (ns) |
-| --- | --- | ---: | ---: | ---: |
-| tint | `wgr_model_set_tint` | 2.66 | 1.22 | 1.45 |
-| transform | `wgr_model_set_transform` | 5.36 | 2.19 | 3.17 |
-| struct | `wgr_input_get_mouse_state` | 9.56 | 2.70 | 6.86 |
-| string | `wgr_text_measure` | 33.08 | 2.99 | 30.09 |
+| Shape | like | JS -> wasm (ns) | inside wasm (ns) | boundary (ns) | calls per ms of JS |
+| --- | --- | ---: | ---: | ---: | ---: |
+| tint | `wgr_model_set_tint` | 2.66 | 1.22 | 1.45 | 376,000 |
+| transform | `wgr_model_set_transform` | 5.36 | 2.19 | 3.17 | 187,000 |
+| struct | `wgr_input_get_mouse_state` | 9.56 | 2.70 | 6.86 | 105,000 |
+| string | `wgr_text_measure` | 33.08 | 2.99 | 30.09 | 30,000 |
 
 ## Sources
 
