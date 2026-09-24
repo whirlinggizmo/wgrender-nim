@@ -1,0 +1,71 @@
+# wgrender-nim CI.
+#
+# raw.nim is written by hand, so what keeps it honest when wgrender's API moves is
+# tools/coverage.py: every declaration checked against the headers by clang, and every
+# one wrapped by wgr.nim. Locally it skips without clang; here --require-clang makes a
+# missing toolchain a failure, so nothing reaches main without the check running.
+#
+# wgrender comes from the pinned submodule, so the binding is checked against the
+# wgrender it pins rather than whatever wgrender's main happens to be; moving the pin
+# is what brings an API change here, and this is where it fails.
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "bench/**", "**/*.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "bench/**", "**/*.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: raw.nim matches wgrender's headers, wgr.nim wraps it
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: actions/cache@v6
+        with:
+          path: emsdk-cache
+          key: emsdk-5.0.7-${{ runner.os }}
+
+      - uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 5.0.7
+          actions-cache-folder: emsdk-cache
+
+      - name: Every declaration against the headers, with clang
+        run: python3 tools/coverage.py --check --require-clang
+
+  build:
+    name: examples build, calls compile as tests/tcalls.nim says
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: The system headers and libraries wgrender needs
+        run: |
+          sudo apt-get update
+          project/lib/wgrender-c/tools/deps.sh install
+
+      - uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: "2.2.12"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Both examples, desktop (builds wgrender's library first)
+        run: |
+          cd examples/simple && nim build desktop
+          cd ../stress && nim build desktop
+
+      - name: How calls are written, and what doesn't compile
+        run: cd tests && nim c -r tcalls.nim

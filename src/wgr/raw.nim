@@ -1,7 +1,8 @@
 ## Raw wgrender bindings: the C API as is (C types, C names). Most code wants the
 ## wrappers in `wgr` instead (Nim types, closures).
-## Declarations come straight from wgrender's public headers (`header: "wgr.h"`),
-## so the C compiler checks every prototype and struct layout for us.
+## Declarations import from wgrender's public headers (`header: "wgr.h"`). The C
+## compiler sees only the calls something makes, and Nim runs it with -w, so it does
+## not check these: tools/coverage.py --check does, every one, against the headers.
 
 type
   WgrHandle* = cuint

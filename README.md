@@ -14,6 +14,7 @@ examples/stress/         the port of wgrender's benchmark scene, tools/bench/str
                          (every example builds with the same config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
+tools/coverage.py        raw.nim against wgrender's headers, and wgr.nim wrapping all of it (CI)
 ```
 
 ## Calling it
@@ -43,6 +44,12 @@ closures, never the C types.
 `m.setPosition(1, 2, 3)` takes plain int literals; wgrender-hx takes only a `Vec3`.
 
 `nim c -r tests/tcalls.nim` checks how calls are written, and what doesn't compile.
+
+`raw.nim` is written by hand, so `tools/coverage.py --check` keeps it honest: clang
+compiles a `_Static_assert` per declaration against wgrender's headers (every function's
+parameter and return types, every imported struct field, every copied constant), and
+every `raw` proc must be called from `wgr.nim`. CI runs it, with `tcalls` and both
+examples, whenever the submodule moves.
 
 ## Build
 
