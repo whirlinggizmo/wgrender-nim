@@ -2,8 +2,7 @@
 ## prebuilt library, whatever the toolchain (gcc or clang, MinGW, MSVC with --cc:vcc,
 ## emcc for the web). raw.nim imports this, so any program that imports wgr gets it.
 ##
-## How to compile wgrender comes from its mk/build.json (its build as data, asked of
-## its Makefiles and checked in): the sources, and per target the defines, flags and
+## How to compile wgrender comes from its build.json (its build as data): the sources, and per target the defines, flags and
 ## link libraries. Each source is a `{.compile.}` with wgrender's own flags, so its
 ## defines and include paths don't reach the program's C; only the public headers'
 ## directory is global.
@@ -16,8 +15,9 @@
 ## WEB_THREADS and WEB_DEBUG from the environment as for wgrender's own web build;
 ## anything else is this OS's desktop build, headless with -d:wgrHeadless.
 ##
-## -d:wgrPrebuilt links a libwgrender.a that wgrender's make built instead, for working
-## on wgrender itself. Nim recompiles a {.compile.} file when it changes, not when a
+## -d:wgrPrebuilt links a libwgrender.a wgrender built instead, for working on wgrender
+## itself: its CMake `desktop` or `headless` preset (build/<preset>/), or for the web
+## its tools/buildweb.py (build/<webdir>/). Nim recompiles a {.compile.} file when it changes, not when a
 ## header it includes does, so after editing a wgrender header, build with -f.
 
 import std/[json, macros, os, sequtils, strutils]
@@ -75,7 +75,7 @@ proc linkLib(name: string): string =
 
 macro compileWgrender(): untyped =
   let dir = findWgrender()
-  let manifest = parseJson(staticRead(dir / "mk" / "build.json"))
+  let manifest = parseJson(staticRead(dir / "build.json"))
   result = newStmtList()
 
   proc pragma(name, value: string): NimNode =
@@ -106,9 +106,14 @@ macro compileWgrender(): untyped =
     staticRuntime = target{"static"}.getBool(false) and not defined(vcc)
 
   when defined(wgrPrebuilt):
-    let lib = dir / "build" / (when defined(emscripten): webDir() else: desktopTarget()) / "libwgrender.a"
+    let build = when defined(emscripten): webDir()
+                elif defined(wgrHeadless): "headless"
+                else: "desktop"
+    let lib = dir / "build" / build / "libwgrender.a"
     if not fileExists(lib):
-      error("wgr: -d:wgrPrebuilt, but no " & lib & ": build it with wgrender's make first")
+      error("wgr: -d:wgrPrebuilt, but no " & lib & ": build it in wgrender first (" &
+            (when defined(emscripten): "python3 tools/buildweb.py" else:
+              "cmake --preset " & build & " && cmake --build --preset " & build & " --target wgrender") & ")")
     result.add pragma("passL", lib)
   else:
     var perFile = @["-std=" & manifest["std"].getStr]

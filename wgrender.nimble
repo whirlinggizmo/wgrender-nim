@@ -1,5 +1,5 @@
 # wgrender for Nim. The binding is src/ (import wgr); wgrender itself is C, compiled
-# into the program by Nim's own C compiler (src/wgr/build.nim): no make needed.
+# into the program by Nim's own C compiler (src/wgr/build.nim): no build tool needed.
 version       = "0.1.0"
 author        = "Rob Knopf"
 description   = "wgrender for Nim"

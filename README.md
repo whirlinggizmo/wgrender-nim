@@ -8,7 +8,7 @@ cross-binding benchmarks. It is not a complete binding yet.
 wgrender.nimble          the package: srcDir src, `import wgr`
 src/wgr.nim              the binding: Nim types, a distinct type per handle kind, closures
 src/wgr/raw.nim          the C API as is, declared against wgrender's headers
-src/wgr/build.nim        compiles wgrender into the program, from its mk/build.json
+src/wgr/build.nim        compiles wgrender into the program, from its build.json
 tests/tcalls.nim         how the calls are written, and that a wrong handle kind doesn't compile
 examples/simple/         the port of wgrender's examples/simple.c (src/simple.nim)
 examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c
@@ -62,23 +62,9 @@ nim build web            # out/web/: simple.js + simple.wasm, wgrender's page sh
 nim serve                # http://localhost:8000/
 ```
 
-There is nothing to build first. `src/wgr/build.nim` compiles wgrender into the program
-with Nim's own C compiler, from the sources and flags in wgrender's `mk/build.json`, so
-a build needs Nim and a C compiler and nothing else: no make, no shell. On Windows that
-is Nim's default MinGW, or MSVC with `--cc:vcc`; for the web, Emscripten (`emcc.bat` on
-Windows). Unused parts of wgrender are left out at link time, so a program is no larger
-than linking a prebuilt `libwgrender.a` would make it. `-d:wgrPrebuilt` links the one
-wgrender's make built instead, for working on wgrender itself; and since Nim rebuilds a
-C file when it changes but not when a header it includes does, build with `-f` after
-editing a wgrender header.
-
-`BACKEND`, `WEB_THREADS` and `WEB_DEBUG` in the environment choose the web build, as
-they do for wgrender's own.
-
-wgrender is found in this order, as wgrender-hx finds it: `-d:wgrenderDir=<path>` or
-`WGRENDER_DIR`, then a `../wgrender-c` checkout beside this one (so a change there is
-tried here without pushing it and moving the pin), then the pinned submodule, which is
-what a clone has, and what `nimble install` puts in the package beside the binding.
+Nim and a C compiler (and Emscripten for the web) are all a build needs: wgrender is
+compiled into the program, from its `build.json`. What to install, MSVC, the web
+options, which wgrender is used, and the checks: [BUILDING.md](BUILDING.md).
 
 ## Benchmarks
 

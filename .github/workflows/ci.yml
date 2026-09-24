@@ -55,14 +55,14 @@ jobs:
       - name: The system headers and libraries wgrender needs (GL, X11, ALSA)
         run: |
           sudo apt-get update
-          project/lib/wgrender-c/tools/deps.sh install
+          python3 project/lib/wgrender-c/tools/deps.py install
 
       - uses: jiro4989/setup-nim-action@v2
         with:
           nim-version: "2.2.12"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Both examples, desktop (wgrender compiled in, from its mk/build.json)
+      - name: Both examples, desktop (wgrender compiled in, from its build.json)
         run: |
           cd examples/simple && nim build desktop
           cd ../stress && nim build desktop

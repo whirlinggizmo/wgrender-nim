@@ -40,7 +40,7 @@ switch("hints", "off")
 switch("path", repoDir / "src") # the binding: wgr.nim, wgr/raw.nim
 
 # wgrender itself is compiled by src/wgr/build.nim, into the program, from its
-# mk/build.json: nothing here builds or links it. What's left is the target.
+# build.json: nothing here builds or links it. What's left is the target.
 when defined(emscripten):
   switch("nimcache", thisDir / ".nimcache/web")
   switch("os", "linux")
