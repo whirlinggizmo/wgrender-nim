@@ -24,12 +24,18 @@ import std/[json, macros, os, sequtils, strutils]
 
 const wgrenderDirDefine {.strdefine: "wgrenderDir".} = ""
 
+proc slashes(path: string): string =
+  ## A web build cross-compiles (--os:linux), and then Nim's path procs split only on
+  ## '/', so a Windows C:\... path would have no parent. Forward slashes work for both,
+  ## and every Windows tool takes them.
+  path.replace('\\', '/')
+
 proc findWgrender(): string {.compileTime.} =
-  let here = currentSourcePath().parentDir()           # src/wgr
+  let here = currentSourcePath().slashes.parentDir()   # src/wgr
   let repo = here.parentDir().parentDir()
   var candidates: seq[string]
-  if wgrenderDirDefine.len > 0: candidates.add wgrenderDirDefine
-  if getEnv("WGRENDER_DIR").len > 0: candidates.add getEnv("WGRENDER_DIR")
+  if wgrenderDirDefine.len > 0: candidates.add wgrenderDirDefine.slashes
+  if getEnv("WGRENDER_DIR").len > 0: candidates.add getEnv("WGRENDER_DIR").slashes
   candidates.add [repo.parentDir() / "wgrender-c", repo / "project" / "lib" / "wgrender-c",
                   # installed by nimble: src/ is the package root, the submodule beside it
                   here.parentDir() / "project" / "lib" / "wgrender-c"]

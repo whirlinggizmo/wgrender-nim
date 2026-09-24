@@ -56,6 +56,10 @@ when defined(emscripten):
   # Release unless WEB_DEBUG=1, like wgrender's own web builds
   if getEnv("WEB_DEBUG", "0") != "1":
     switch("define", "release")
+    # Nim's own nim.cfg is read before this file, while the OS is still the host's and
+    # release is not yet defined: on Windows it gives clang a -g link, and emcc then
+    # keeps DWARF and skips most of its optimization (simple: 1.16 MB of wasm, 0.72).
+    switch("clang.options.linker", "")
 else:
   switch("nimcache", thisDir / ".nimcache/desktop")
   switch("define", "wgrAssetBase=" & wgrenderDir / "examples/assets")
