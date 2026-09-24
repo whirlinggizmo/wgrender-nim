@@ -176,12 +176,12 @@ proc frame(dt, tickFraction: float) =
   update(dt)
   updatePickMessage(mouse)
 
-  renderBegin()
+  renderBeginFrame()
   renderClearBackground(g.backgroundColor)
   sceneDraw(g.scene)
   drawCenteredMessage()
   drawOverlay(mouse)
-  renderEnd()
+  renderEndFrame()
 
 when isMainModule:
   initValues(ScreenWidth, ScreenHeight, "simple (wgrender, Nim)",

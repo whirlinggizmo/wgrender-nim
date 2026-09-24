@@ -411,8 +411,8 @@ proc scenePick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
 
 # --- frame ---
 
-proc renderBegin*() = wgr_render_begin()
-proc renderEnd*() = wgr_render_end()
+proc renderBeginFrame*() = wgr_render_begin_frame()
+proc renderEndFrame*() = wgr_render_end_frame()
 proc renderClearBackground*(color: Color) = wgr_render_clear_background(color)
 proc windowGetScreenSize*(): Vec2 = wgr_window_get_screen_size().toNim
 

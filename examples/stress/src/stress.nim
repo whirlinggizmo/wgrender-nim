@@ -123,11 +123,11 @@ proc drawText() =
 proc frame(dt, tickFraction: float) =
   for i in 0 ..< g.entities.len:
     update(i)
-  renderBegin()
+  renderBeginFrame()
   renderClearBackground(g.background)
   sceneDraw(g.scene)
   drawText()
-  renderEnd()
+  renderEndFrame()
 
 when isMainModule:
   g.n = entityCount()

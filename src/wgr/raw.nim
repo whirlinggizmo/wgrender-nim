@@ -147,8 +147,8 @@ proc wgr_scene_draw*(scene: WgrHandle)
 proc wgr_scene_pick*(scene, camera: WgrHandle; mouseX, mouseY: cfloat): CPickResult
 
 # frame
-proc wgr_render_begin*()
-proc wgr_render_end*()
+proc wgr_render_begin_frame*()
+proc wgr_render_end_frame*()
 proc wgr_render_clear_background*(color: WgrColor)
 proc wgr_window_get_screen_size*(): CVec2
 proc wgr_input_get_mouse_state*(): CMouseState
