@@ -1,13 +1,19 @@
 # Build config for a wgrender example: this directory's name is the example's, and its
 # source is src/<name>.nim. Every example's config.nims is this same file.
 #
-#   nim build desktop     out/desktop/<name> (wgrender compiled in, by src/wgr/build.nim)
-#   nim build web         out/web/: <name>.js/.wasm + wgrender's page shell
+#   nim build desktop     out/<platform>/<variant>/<name>: out/linux/release/, out/windows/mingw/,
+#                         ... (wgrender compiled in, by src/wgr/build.nim)
+#   nim build web         out/web/<variant>/ (out/web/webgl2 by default): <name>.js/.wasm +
+#                         wgrender's page shell
 #   nim build all         both
-#   nim serve             serve out/web on http://localhost:8000 (wgrender's tools/serve.py:
+#   nim serve             serve the web build on http://localhost:8000 (wgrender's tools/serve.py:
 #                         COOP/COEP headers for threads, examples/assets at /assets,
 #                         gzip-compressed responses)
-#   nim clean             remove out/ and .nimcache/
+#   nim clean             remove out/ (what the builds made) and build/ (their work: Nim's cache)
+#
+# The wg* layout (whirlinggizmo/.github CONVENTIONS.md, "Build directories"): what a
+# build makes in out/<platform>/<variant>/, its work in build/<platform>/<variant>/
+# (Nim's cache in build/linux/release/nimcache, build/web/webgl2/nimcache, ...).
 #
 # Run these from this directory. `nim c -r src/<name>.nim` still builds and runs the
 # desktop version in place.
@@ -28,6 +34,7 @@ const
   name = thisDir.lastPathPart
   mainEntry = thisDir / "src" / name & ".nim"
   outDir = thisDir / "out"
+  workDir = thisDir / "build"
   wgrenderSibling = repoDir / "../wgrender-c"
   wgrenderSubmodule = repoDir / "project/lib/wgrender-c"
 
@@ -36,13 +43,25 @@ let wgrenderDir = absolutePath(
   elif fileExists(wgrenderSibling / "include/wgr.h"): wgrenderSibling
   else: wgrenderSubmodule)
 
+proc desktopVariant(): string =
+  ## <platform>/<variant>: release, or on Windows the toolchain (Nim's default, MinGW)
+  when defined(windows): "windows/mingw"
+  elif defined(macosx): "macos/release"
+  else: "linux/release"
+
+proc webVariant(): string =
+  ## web/<variant>, from the web settings (threaded unless WEB_THREADS=0)
+  result = "web/" & (if getEnv("BACKEND").len > 0: getEnv("BACKEND") else: "webgl2")
+  if getEnv("WEB_THREADS", "1") == "0": result.add "-nothreads"
+  if getEnv("WEB_DEBUG", "0") == "1": result.add "-debug"
+
 switch("hints", "off")
 switch("path", repoDir / "src") # the binding: wgr.nim, wgr/raw.nim
 
 # wgrender itself is compiled by src/wgr/build.nim, into the program, from its
 # build.json: nothing here builds or links it. What's left is the target.
 when defined(emscripten):
-  switch("nimcache", thisDir / ".nimcache/web")
+  switch("nimcache", workDir / webVariant() / "nimcache")
   switch("os", "linux")
   switch("cpu", "wasm32")
   switch("cc", "clang")
@@ -61,26 +80,34 @@ when defined(emscripten):
     # keeps DWARF and skips most of its optimization (simple: 1.16 MB of wasm, 0.72).
     switch("clang.options.linker", "")
 else:
-  switch("nimcache", thisDir / ".nimcache/desktop")
+  switch("nimcache", workDir / desktopVariant() / "nimcache")
   switch("define", "wgrAssetBase=" & wgrenderDir / "examples/assets")
 
+proc python(): string =
+  ## python3 where there is one, else python (Windows)
+  if findExe("python3").len > 0: "python3" else: "python"
+
+proc desktopOut(): string = outDir / desktopVariant()
+
+proc webOut(): string = outDir / webVariant()
+
 proc buildDesktop() =
-  echo name & " (desktop) -> out/desktop/" & name
-  exec "nim c --out:" & quoteShell(outDir / "desktop" / name) & " " & mainEntry.quoteShell
+  echo name & " (desktop) -> " & relativePath(desktopOut(), thisDir) & "/" & name
+  exec "nim c --out:" & quoteShell(desktopOut() / name) & " " & mainEntry.quoteShell
 
 proc buildWeb() =
-  let site = outDir / "web"
+  let site = webOut()
   mkDir(site)
-  echo name & " (web) -> out/web/"
+  echo name & " (web) -> " & relativePath(site, thisDir) & "/"
   exec "nim c -d:emscripten --out:" & quoteShell(site / name & ".js") & " " & mainEntry.quoteShell
   # wgrender's page shell, opening this example by default (its default is "hello"),
   # finished by wgrender's deploy script: versioned file names and examples.json.
-  let shell = thisDir / ".nimcache/web/index.html"
+  let shell = workDir / webVariant() / "index.html"
   writeFile(shell, readFile(wgrenderDir / "examples/web/index.html")
     .replace("""params.get("ex") || "hello"""", "params.get(\"ex\") || \"" & name & "\""))
-  exec "python3 " & quoteShell(wgrenderDir / "tools/webdeploy.py") & " " &
+  exec python() & " " & quoteShell(wgrenderDir / "tools/webdeploy.py") & " " &
        site.quoteShell & " " & shell.quoteShell
-  echo "built out/web — `nim serve`, then open http://localhost:8000/"
+  echo "built " & relativePath(site, thisDir) & " — `nim serve`, then open http://localhost:8000/"
 
 task build, "Build: nim build desktop|web|all":
   let target = if paramCount() >= 2: paramStr(paramCount()) else: ""
@@ -93,10 +120,10 @@ task build, "Build: nim build desktop|web|all":
   else:
     quit "usage: nim build desktop|web|all", 1
 
-task serve, "Serve out/web on http://localhost:8000":
-  exec "python3 " & quoteShell(wgrenderDir / "tools/serve.py") & " 8000 " &
-       quoteShell(outDir / "web") & " --gzip"
+task serve, "Serve the web build on http://localhost:8000":
+  exec python() & " " & quoteShell(wgrenderDir / "tools/serve.py") & " 8000 " &
+       quoteShell(webOut()) & " --gzip"
 
 task clean, "Remove build outputs":
   rmDir(outDir)
-  rmDir(thisDir / ".nimcache")
+  rmDir(workDir)

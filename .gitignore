@@ -1,5 +1,5 @@
 out/
-.nimcache/
+build/
 __pycache__/
 # `nim c -r src/simple.nim` leaves the binary beside it
 /examples/simple/src/simple

@@ -16,9 +16,9 @@
 ## anything else is this OS's desktop build, headless with -d:wgrHeadless.
 ##
 ## -d:wgrPrebuilt links the library wgrender built instead, for working on wgrender
-## itself, from build/<platform>/<variant>/ (the wg* layout): its CMake preset
+## itself, from out/<platform>/<variant>/ (the wg* layout): its CMake preset
 ## <os>-release or <os>-headless (windows-mingw*, or windows-msvc* with --cc:vcc), or
-## for the web its tools/buildweb.py (build/web/<webdir>/). Nim recompiles a {.compile.} file when it changes, not when a
+## for the web its tools/buildweb.py (out/web/<webdir>/). Nim recompiles a {.compile.} file when it changes, not when a
 ## header it includes does, so after editing a wgrender header, build with -f.
 
 import std/[json, macros, os, sequtils, strutils]
@@ -117,7 +117,7 @@ macro compileWgrender(): untyped =
                      elif defined(macosx): "macos"
                      else: "linux"
     const preset = platform & "-" & variant
-    let lib = dir / "build" / platform / variant / (when defined(vcc): "wgrender.lib" else: "libwgrender.a")
+    let lib = dir / "out" / platform / variant / (when defined(vcc): "wgrender.lib" else: "libwgrender.a")
     if not fileExists(lib):
       error("wgr: -d:wgrPrebuilt, but no " & lib & ": build it in wgrender first (" &
             (when defined(emscripten): "python3 tools/buildweb.py" else:

@@ -25,8 +25,8 @@ than it would be linking a prebuilt `libwgrender.a`.
 ```sh
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
 cd wgrender-nim/examples/simple     # or examples/stress
-nim build desktop        # out/desktop/simple
-nim build web            # out/web/: simple.js + simple.wasm, wgrender's page shell
+nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
+nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim build all            # both
 nim serve                # http://localhost:8000/ (COOP/COEP headers, assets at /assets)
 nim clean
@@ -54,10 +54,10 @@ In this order, as wgrender-hx finds it:
    `nimble install` puts in the package beside the binding
 
 `-d:wgrPrebuilt` links a library wgrender built instead of compiling it in, for working
-on wgrender itself, from wgrender's `build/<platform>/<variant>/` (the wg* layout,
+on wgrender itself, from wgrender's `out/<platform>/<variant>/` (the wg* layout,
 whirlinggizmo/.github CONVENTIONS.md): its CMake `<os>-release` preset (`-d:wgrHeadless`
 for `<os>-headless`; on Windows `windows-mingw`, or `windows-msvc` with `--cc:vcc`), or
-for the web `tools/buildweb.py`'s `build/web/<webdir>/libwgrender.a`. The error says which command builds it.
+for the web `tools/buildweb.py`'s `out/web/<webdir>/libwgrender.a`. The error says which command builds it.
 
 ## Checks
 

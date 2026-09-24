@@ -57,8 +57,8 @@ examples, whenever the submodule moves.
 ```sh
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
 cd wgrender-nim/examples/simple     # or examples/stress
-nim build desktop        # out/desktop/simple
-nim build web            # out/web/: simple.js + simple.wasm, wgrender's page shell
+nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
+nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim serve                # http://localhost:8000/
 ```
 

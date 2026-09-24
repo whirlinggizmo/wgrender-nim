@@ -6,4 +6,6 @@ const repoDir = currentSourcePath().parentDir() / ".."
 
 switch("hints", "off")
 switch("path", repoDir / "src")
-switch("nimcache", repoDir / ".nimcache/tests")
+# their cache in the repo's build/<platform>/<variant>/ (the wg* layout): a desktop build
+let variant = when defined(windows): "windows/mingw" elif defined(macosx): "macos/release" else: "linux/release"
+switch("nimcache", repoDir / "build" / variant / "nimcache")
