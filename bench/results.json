@@ -2,14 +2,13 @@
   "schema": 1,
   "project": "wgrender-nim",
   "environment": {
-    "date": "2026-09-23",
+    "date": "2026-09-24",
     "machine": "13th Gen Intel(R) Core(TM) i9-13900HX, Linux",
     "browser": "Brave Browser 153.1.95.104",
-    "node": "v22.16.0",
     "emcc": "5.0.7"
   },
   "wgrender": {
-    "commit": "ae7a096",
+    "commit": "399ede3",
     "dirty": false,
     "source": "sibling checkout"
   },
@@ -25,23 +24,23 @@
           {
             "name": "simple.wasm",
             "kind": "wasm",
-            "raw": 718913,
-            "gzip": 303151,
-            "brotli": 245271
+            "raw": 720009,
+            "gzip": 306801,
+            "brotli": 249814
           },
           {
             "name": "simple.js",
             "kind": "js",
-            "raw": 66181,
-            "gzip": 23465,
-            "brotli": 20912
+            "raw": 54980,
+            "gzip": 20771,
+            "brotli": 18479
           },
           {
             "name": "index.html",
             "kind": "page",
-            "raw": 8612,
-            "gzip": 3593,
-            "brotli": 2915
+            "raw": 8636,
+            "gzip": 3601,
+            "brotli": 2923
           },
           {
             "name": "examples.json",
@@ -52,53 +51,53 @@
           }
         ],
         "total": {
-          "raw": 793717,
-          "gzip": 330240,
-          "brotli": 269113
+          "raw": 783636,
+          "gzip": 331204,
+          "brotli": 271231
         }
       },
       "frame": {
         "label": "nim",
-        "frames": 481,
+        "frames": 479,
         "median": 16.66,
         "p95": 16.67,
-        "overCap": 0,
-        "scriptMs": 0.509,
-        "taskMs": 0.818,
+        "overCap": 0.0,
+        "scriptMs": 0.516,
+        "taskMs": 0.804,
         "scriptRuns": [
-          0.506,
-          0.509,
-          0.521
+          0.498,
+          0.516,
+          0.526
         ]
       },
       "gc": {
         "label": "nim",
-        "frames": 608,
+        "frames": 606,
         "uncapped": false,
-        "allocBytesPerFrame": 661,
-        "allocMBPerMinute": 2.3,
-        "collections": 1,
-        "freedMB": 0.19,
-        "heapStartMB": 8.6,
-        "heapEndMB": 8.8,
+        "allocBytesPerFrame": 1456,
+        "allocMBPerMinute": 5.0,
+        "collections": 2,
+        "freedMB": 0.61,
+        "heapStartMB": 8.5,
+        "heapEndMB": 8.7,
         "frameMs": {
-          "median": 16.66,
+          "median": 16.67,
           "p99": 16.67,
           "max": 16.67
         },
         "gcFrameMs": {
-          "median": 16.66,
-          "max": 16.66
+          "median": 16.67,
+          "max": 16.67
         },
         "loadMs": 0,
         "lateFrames": {
           "over20": 0,
           "over33": 0,
-          "pct": 0
+          "pct": 0.0
         },
         "gc": {
-          "totalMs": 0,
-          "pctOfWall": 0,
+          "totalMs": 0.0,
+          "pctOfWall": 0.0,
           "minor": {
             "count": 0,
             "medianMs": null,
@@ -119,30 +118,30 @@
           "n": 1000,
           "frame": {
             "label": "nim-1000",
-            "frames": 481,
+            "frames": 479,
             "median": 16.66,
             "p95": 16.67,
-            "overCap": 0,
-            "scriptMs": 0.444,
-            "taskMs": 0.528,
+            "overCap": 0.0,
+            "scriptMs": 0.458,
+            "taskMs": 0.538,
             "scriptRuns": [
-              0.444,
-              0.444,
-              0.446
+              0.45,
+              0.458,
+              0.484
             ]
           },
           "gc": {
             "label": "nim-1000",
-            "frames": 608,
+            "frames": 606,
             "uncapped": false,
-            "allocBytesPerFrame": 410,
-            "allocMBPerMinute": 1.4,
+            "allocBytesPerFrame": 485,
+            "allocMBPerMinute": 1.7,
             "collections": 1,
             "freedMB": 0.43,
             "heapStartMB": 2.3,
             "heapEndMB": 2.1,
             "frameMs": {
-              "median": 16.67,
+              "median": 16.66,
               "p99": 16.67,
               "max": 16.67
             },
@@ -154,15 +153,15 @@
             "lateFrames": {
               "over20": 0,
               "over33": 0,
-              "pct": 0
+              "pct": 0.0
             },
             "gc": {
               "totalMs": 0.5,
               "pctOfWall": 0.01,
               "minor": {
                 "count": 1,
-                "medianMs": 0.48,
-                "maxMs": 0.48,
+                "medianMs": 0.52,
+                "maxMs": 0.52,
                 "totalMs": 0.5
               },
               "major": {
@@ -179,30 +178,30 @@
           "n": 5000,
           "frame": {
             "label": "nim-5000",
-            "frames": 480,
+            "frames": 479,
             "median": 16.66,
             "p95": 16.67,
-            "overCap": 0,
-            "scriptMs": 1.431,
-            "taskMs": 1.525,
+            "overCap": 0.0,
+            "scriptMs": 1.481,
+            "taskMs": 1.569,
             "scriptRuns": [
-              1.423,
-              1.431,
-              1.434
+              1.472,
+              1.481,
+              1.517
             ]
           },
           "gc": {
             "label": "nim-5000",
-            "frames": 607,
+            "frames": 606,
             "uncapped": false,
-            "allocBytesPerFrame": 410,
-            "allocMBPerMinute": 1.4,
+            "allocBytesPerFrame": 485,
+            "allocMBPerMinute": 1.7,
             "collections": 1,
-            "freedMB": 0.46,
-            "heapStartMB": 2.4,
+            "freedMB": 0.43,
+            "heapStartMB": 2.2,
             "heapEndMB": 2.1,
             "frameMs": {
-              "median": 16.67,
+              "median": 16.66,
               "p99": 16.67,
               "max": 16.67
             },
@@ -214,11 +213,11 @@
             "lateFrames": {
               "over20": 0,
               "over33": 0,
-              "pct": 0
+              "pct": 0.0
             },
             "gc": {
               "totalMs": 0.4,
-              "pctOfWall": 0,
+              "pctOfWall": 0.0,
               "minor": {
                 "count": 1,
                 "medianMs": 0.44,
@@ -239,48 +238,51 @@
           "n": 10000,
           "frame": {
             "label": "nim-10000",
-            "frames": 480,
+            "frames": 479,
             "median": 16.66,
             "p95": 16.67,
-            "overCap": 0,
-            "scriptMs": 2.738,
-            "taskMs": 2.827,
+            "overCap": 0.0,
+            "scriptMs": 2.847,
+            "taskMs": 2.932,
             "scriptRuns": [
-              2.691,
-              2.738,
-              2.782
+              2.825,
+              2.847,
+              2.893
             ]
           },
           "gc": {
             "label": "nim-10000",
-            "frames": 608,
+            "frames": 607,
             "uncapped": false,
-            "allocBytesPerFrame": 412,
-            "allocMBPerMinute": 1.4,
-            "collections": 0,
-            "freedMB": 0,
-            "heapStartMB": 1.9,
+            "allocBytesPerFrame": 488,
+            "allocMBPerMinute": 1.7,
+            "collections": 1,
+            "freedMB": 0.43,
+            "heapStartMB": 2.3,
             "heapEndMB": 2.1,
             "frameMs": {
               "median": 16.66,
               "p99": 16.67,
               "max": 16.67
             },
-            "gcFrameMs": null,
+            "gcFrameMs": {
+              "median": 16.66,
+              "max": 16.66
+            },
             "loadMs": 8,
             "lateFrames": {
               "over20": 0,
               "over33": 0,
-              "pct": 0
+              "pct": 0.0
             },
             "gc": {
-              "totalMs": 0.5,
-              "pctOfWall": 0.01,
+              "totalMs": 0.3,
+              "pctOfWall": 0.0,
               "minor": {
                 "count": 1,
-                "medianMs": 0.54,
-                "maxMs": 0.54,
-                "totalMs": 0.5
+                "medianMs": 0.35,
+                "maxMs": 0.35,
+                "totalMs": 0.3
               },
               "major": {
                 "count": 0,
