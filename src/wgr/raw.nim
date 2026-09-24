@@ -4,6 +4,8 @@
 ## compiler sees only the calls something makes, and Nim runs it with -w, so it does
 ## not check these: tools/coverage.py --check does, every one, against the headers.
 
+import ./build # compiles wgrender into the program, from its mk/build.json
+
 type
   WgrHandle* = cuint
   WgrColor* = uint32

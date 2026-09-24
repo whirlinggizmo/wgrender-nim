@@ -52,7 +52,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: The system headers and libraries wgrender needs
+      - name: The system headers and libraries wgrender needs (GL, X11, ALSA)
         run: |
           sudo apt-get update
           project/lib/wgrender-c/tools/deps.sh install
@@ -62,7 +62,7 @@ jobs:
           nim-version: "2.2.12"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Both examples, desktop (builds wgrender's library first)
+      - name: Both examples, desktop (wgrender compiled in, from its mk/build.json)
         run: |
           cd examples/simple && nim build desktop
           cd ../stress && nim build desktop

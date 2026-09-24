@@ -1,7 +1,7 @@
 # Build config for a wgrender example: this directory's name is the example's, and its
 # source is src/<name>.nim. Every example's config.nims is this same file.
 #
-#   nim build desktop     out/desktop/<name> (builds wgrender's desktop lib first)
+#   nim build desktop     out/desktop/<name> (wgrender compiled in, by src/wgr/build.nim)
 #   nim build web         out/web/: <name>.js/.wasm + wgrender's page shell
 #   nim build all         both
 #   nim serve             serve out/web on http://localhost:8000 (wgrender's tools/serve.py:
@@ -12,7 +12,7 @@
 # Run these from this directory. `nim c -r src/<name>.nim` still builds and runs the
 # desktop version in place.
 #
-# Web options are wgrender's make variables, read from the environment:
+# Web options are wgrender's web build settings, read from the environment:
 #   BACKEND=webgl2|webgpu   WEB_THREADS=1|0   WEB_DEBUG=0|1   (e.g. BACKEND=webgpu nim build web)
 # wgrender, in order (the same as wgrender-hx):
 #   1. WGRENDER_DIR=/path/to/wgrender
@@ -36,68 +36,35 @@ let wgrenderDir = absolutePath(
   elif fileExists(wgrenderSibling / "include/wgr.h"): wgrenderSibling
   else: wgrenderSubmodule)
 
-# wgrender's make variables for the web build, passed through to every make call.
-proc webMakeVars(): string =
-  for v in ["BACKEND", "WEB_THREADS", "WEB_DEBUG"]:
-    if existsEnv(v):
-      result.add " " & v & "=" & getEnv(v)
-
-# wgrender's web compile/link flags (`make print-web-flags`: lib, cflags, ldflags lines),
-# so this build always matches how the web library was built.
-proc webFlags(): tuple[lib, cflags, ldflags: string] =
-  let output = gorge("make --no-print-directory -s -C " & wgrenderDir.quoteShell &
-                     " print-web-flags" & webMakeVars())
-  for line in output.splitLines():
-    let parts = line.split(':', maxsplit = 1)
-    if parts.len != 2: continue
-    let value = parts[1].strip()
-    case parts[0].strip()
-    of "lib": result.lib = wgrenderDir / value
-    of "cflags": result.cflags = value.replace("-Iinclude", "-I" & wgrenderDir / "include")
-    of "ldflags": result.ldflags = value
-  if result.lib.len == 0:
-    raise newException(ValueError, "could not read wgrender web flags:\n" & output)
-
 switch("hints", "off")
 switch("path", repoDir / "src") # the binding: wgr.nim, wgr/raw.nim
 
+# wgrender itself is compiled by src/wgr/build.nim, into the program, from its
+# mk/build.json: nothing here builds or links it. What's left is the target.
 when defined(emscripten):
-  let web = webFlags()
   switch("nimcache", thisDir / ".nimcache/web")
   switch("os", "linux")
   switch("cpu", "wasm32")
   switch("cc", "clang")
-  switch("clang.exe", "emcc")
-  switch("clang.linkerexe", "emcc")
+  # emcc is a batch file on Windows, which Nim has to name
+  switch("clang.exe", when defined(windows): "emcc.bat" else: "emcc")
+  switch("clang.linkerexe", when defined(windows): "emcc.bat" else: "emcc")
   switch("define", "noSignalHandler")
   switch("define", "useMalloc")
-  # Nim code only runs on the main thread; wgrender's workers are its own. The objects
-  # still get wgrender's cflags (-pthread) so they can link into shared memory.
+  # Nim code only runs on the main thread; wgrender's workers are its own
   switch("threads", "off")
   # Release unless WEB_DEBUG=1, like wgrender's own web builds
   if getEnv("WEB_DEBUG", "0") != "1":
     switch("define", "release")
-  switch("passC", web.cflags)
-  switch("passL", web.lib)
-  switch("passL", web.ldflags)
 else:
   switch("nimcache", thisDir / ".nimcache/desktop")
   switch("define", "wgrAssetBase=" & wgrenderDir / "examples/assets")
-  switch("passC", "-I" & wgrenderDir / "include")
-  # wgrender's native library directory is named for the OS (build/linux, build/macos)
-  switch("passL", wgrenderDir / (when defined(macosx): "build/macos" else: "build/linux") / "libwgrender.a")
-  for lib in ["GL", "X11", "Xi", "Xcursor", "Xrandr", "asound", "dl", "m", "pthread"]:
-    switch("passL", "-l" & lib)
 
 proc buildDesktop() =
-  echo "wgrender (desktop)"
-  exec "make --no-print-directory -C " & wgrenderDir.quoteShell
   echo name & " (desktop) -> out/desktop/" & name
   exec "nim c --out:" & quoteShell(outDir / "desktop" / name) & " " & mainEntry.quoteShell
 
 proc buildWeb() =
-  echo "wgrender (web)"
-  exec "make --no-print-directory -C " & wgrenderDir.quoteShell & " web" & webMakeVars()
   let site = outDir / "web"
   mkDir(site)
   echo name & " (web) -> out/web/"
