@@ -54,9 +54,10 @@ In this order, as wgrender-hx finds it:
    `nimble install` puts in the package beside the binding
 
 `-d:wgrPrebuilt` links a library wgrender built instead of compiling it in, for working
-on wgrender itself: its CMake `desktop` preset (`-d:wgrHeadless` for `headless`),
-`build/<preset>/libwgrender.a`, or for the web `tools/buildweb.py`'s
-`build/<webdir>/libwgrender.a`. The error says which command builds it.
+on wgrender itself, from wgrender's `build/<platform>/<variant>/` (the wg* layout,
+whirlinggizmo/.github CONVENTIONS.md): its CMake `<os>-release` preset (`-d:wgrHeadless`
+for `<os>-headless`; on Windows `windows-mingw`, or `windows-msvc` with `--cc:vcc`), or
+for the web `tools/buildweb.py`'s `build/web/<webdir>/libwgrender.a`. The error says which command builds it.
 
 ## Checks
 

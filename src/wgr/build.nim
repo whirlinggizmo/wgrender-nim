@@ -15,9 +15,10 @@
 ## WEB_THREADS and WEB_DEBUG from the environment as for wgrender's own web build;
 ## anything else is this OS's desktop build, headless with -d:wgrHeadless.
 ##
-## -d:wgrPrebuilt links a libwgrender.a wgrender built instead, for working on wgrender
-## itself: its CMake `desktop` or `headless` preset (build/<preset>/), or for the web
-## its tools/buildweb.py (build/<webdir>/). Nim recompiles a {.compile.} file when it changes, not when a
+## -d:wgrPrebuilt links the library wgrender built instead, for working on wgrender
+## itself, from build/<platform>/<variant>/ (the wg* layout): its CMake preset
+## <os>-release or <os>-headless (windows-mingw*, or windows-msvc* with --cc:vcc), or
+## for the web its tools/buildweb.py (build/web/<webdir>/). Nim recompiles a {.compile.} file when it changes, not when a
 ## header it includes does, so after editing a wgrender header, build with -f.
 
 import std/[json, macros, os, sequtils, strutils]
@@ -106,14 +107,21 @@ macro compileWgrender(): untyped =
     staticRuntime = target{"static"}.getBool(false) and not defined(vcc)
 
   when defined(wgrPrebuilt):
-    let build = when defined(emscripten): webDir()
-                elif defined(wgrHeadless): "headless"
-                else: "desktop"
-    let lib = dir / "build" / build / "libwgrender.a"
+    const variant = when defined(emscripten): webDir()
+                    elif defined(windows): (when defined(vcc): "msvc" else: "mingw") &
+                                           (when defined(wgrHeadless): "-headless" else: "")
+                    elif defined(wgrHeadless): "headless"
+                    else: "release"
+    const platform = when defined(emscripten): "web"
+                     elif defined(windows): "windows"
+                     elif defined(macosx): "macos"
+                     else: "linux"
+    const preset = platform & "-" & variant
+    let lib = dir / "build" / platform / variant / (when defined(vcc): "wgrender.lib" else: "libwgrender.a")
     if not fileExists(lib):
       error("wgr: -d:wgrPrebuilt, but no " & lib & ": build it in wgrender first (" &
             (when defined(emscripten): "python3 tools/buildweb.py" else:
-              "cmake --preset " & build & " && cmake --build --preset " & build & " --target wgrender") & ")")
+              "cmake --preset " & preset & " && cmake --build --preset " & preset & " --target wgrender") & ")")
     result.add pragma("passL", lib)
   else:
     var perFile = @["-std=" & manifest["std"].getStr]
