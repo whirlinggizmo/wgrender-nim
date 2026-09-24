@@ -68,9 +68,9 @@ proc spawn(): Entity =
   result.vz = (rnd() * 2 - 1) * 4
   result.spin = (rnd() * 2 - 1) * 3
   result.life = 2 + rnd() * 4
-  result.sprite = sprite3dCreate(g.texture)
-  sprite3dSetFacing(result.sprite, SpriteFacing.Free)
-  sceneAdd(g.scene, result.sprite)
+  result.sprite = newSprite3d(g.texture)
+  result.sprite.setFacing(SpriteFacing.Free)
+  g.scene.add(result.sprite)
 
 proc update(i: int) =
   let e = g.entities[i]
@@ -89,45 +89,45 @@ proc update(i: int) =
     e.vz = -e.vz
   e.angle += e.spin * Step
   e.life -= Step
-  sprite3dSetTransform(e.sprite, (e.x, e.y, e.z), (0.0, e.angle, 0.0), (0.5, 0.5, 0.5))
+  e.sprite.setTransform((e.x, e.y, e.z), (0.0, e.angle, 0.0), (0.5, 0.5, 0.5))
   if e.life <= 0:
-    sprite3dDestroy(e.sprite)
+    e.sprite.destroy()
     g.entities[i] = spawn() # a new object; ARC frees the old one here
 
 proc onInit() =
-  assetSetHost(AssetBase)
-  loggerSetLevel(LogLevel.Warn)
+  setAssetHost(AssetBase)
+  setLogLevel(LogLevel.Warn)
   setTargetFps(60)
   g.rng = 2463534242'u32
 
-  let camera = camera3dCreate(Projection.Perspective)
-  camera3dSetView(camera, (0.0, 14.0, 30.0), (0.0, 3.0, 0.0))
-  g.scene = sceneCreate()
-  sceneSetActiveCamera(g.scene, camera)
-  g.background = colorRgba(245, 245, 245, 255)
+  let camera = newCamera3d(Projection.Perspective)
+  camera.setView((0.0, 14.0, 30.0), (0.0, 3.0, 0.0))
+  g.scene = newScene()
+  g.scene.setActiveCamera(camera)
+  g.background = rgba(245, 245, 245, 255)
 
   let onFailed = proc (path: string) = logError("failed to import asset: " & path)
   let onReady = proc (path: string) =
-    g.texture = textureCreate(path)
+    g.texture = newTexture(path)
     for _ in 0 ..< g.n:
       g.entities.add spawn()
-  if not assetAddTask(assetEnsureAsync(SpritePath), onReady, onFailed):
+  if not ensureAssetAsync(SpritePath).addTask(onReady, onFailed):
     onFailed(SpritePath)
 
 proc drawText() =
-  textDraw(&"stress: {g.n} entities", 10, 10, 16, ColorBlack)
+  drawText(&"stress: {g.n} entities", 10, 10, 16, ColorBlack)
   for i in 0 ..< min(TextLines, g.entities.len):
     let e = g.entities[i]
-    textDraw(&"e{i}: {e.x:.2f} {e.y:.2f} {e.z:.2f} life {e.life:.2f}", 10, 34 + 18 * i, 16, ColorBlack)
+    drawText(&"e{i}: {e.x:.2f} {e.y:.2f} {e.z:.2f} life {e.life:.2f}", 10, 34 + 18 * i, 16, ColorBlack)
 
 proc frame(dt, tickFraction: float) =
   for i in 0 ..< g.entities.len:
     update(i)
-  renderBeginFrame()
-  renderClearBackground(g.background)
-  sceneDraw(g.scene)
+  beginFrame()
+  clearBackground(g.background)
+  g.scene.draw()
   drawText()
-  renderEndFrame()
+  endFrame()
 
 when isMainModule:
   g.n = entityCount()

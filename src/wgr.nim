@@ -6,7 +6,15 @@
 ## - closures for callbacks, called through cdecl trampolines
 ## - a distinct type per handle kind (Model, Texture, Font, ...), so passing the
 ##   wrong kind is a compile error; the zero value is "none" (`isNone`)
-## - C `wgr_foo_bar` is Nim `fooBar`; `bool` results are discardable
+## - the calls read as Nim, not C: on a handle, the call is its action, on the
+##   handle by method call syntax (`wgr_model_set_position(m, ...)` is
+##   `m.setPosition(v)`), overloaded on the handle kinds; a constructor is
+##   `new<Kind>` (`wgr_model_create` is `newModel(mesh)`); anything else is its
+##   action as a plain proc (`wgr_render_begin_frame` is `beginFrame()`), with its
+##   section as a noun only where the action alone would be ambiguous
+##   (`drawText`, `measureText`, `setAssetHost`, `setLogLevel`). `wgr.` in front
+##   qualifies any of them: `wgr.newTexture(path)`
+## - `bool` results are discardable
 ##
 ## `wgr/raw` has the C API as is, for anything not wrapped here.
 
@@ -32,7 +40,8 @@ type
 
   AnyHandle* = Audio | Mesh | Texture | Font | Sound | Model | Sprite3d |
                Camera3d | Light | Scene | AssetTask
-  SceneMember* = Model | Sprite3d | Light ## what sceneAdd takes
+  SceneMember* = Model | Sprite3d | Light ## what a scene's add takes
+
 
   Vec2* = tuple[x, y: float]
   Vec3* = tuple[x, y, z: float]
@@ -100,7 +109,7 @@ type
 
   KeyboardState* = object
     ## every key at once, plus this frame's pressed keys and chars; for one key,
-    ## `inputGetKey` / `isKeyPressed` are simpler
+    ## `getKey` / `isKeyPressed` are simpler
     c: CKeyboardState
 
   AssetCallback* = proc (path: string) {.closure.}
@@ -119,7 +128,10 @@ proc `==`*(a: AnyHandle; b: Handle): bool = a.Handle == b
 proc `$`*(h: AnyHandle): string = $h.Handle
 proc isNone*(h: AnyHandle): bool = h.Handle == 0 ## not created (yet), or creation failed
 
+# The asserts include wgr.h themselves: otherwise they depend on some other call in the
+# same C file having pulled it in, which a program that only type-checks never does.
 {.emit: """
+#include "wgr.h"
 _Static_assert(WGR_KEY_SPACE == 32, "wgr.nim Key.Space is out of date with wgr_keys.h");
 _Static_assert(WGR_KEY_APOSTROPHE == 39, "wgr.nim Key.Apostrophe is out of date with wgr_keys.h");
 _Static_assert(WGR_KEY_COMMA == 44, "wgr.nim Key.Comma is out of date with wgr_keys.h");
@@ -239,17 +251,18 @@ proc getPlatform*(): string = $wgr_get_platform()
 proc setTargetFps*(fps: int) = wgr_set_target_fps(fps.cint)
 
 # --- logging ---
+# `log` in front, as std/logging has debug, info, warn and error of its own
 
-proc loggerSetLevel*(level: LogLevel) = wgr_logger_set_level(ord(level).cint)
-proc loggerMessage*(level: LogLevel; msg: string) =
+proc setLogLevel*(level: LogLevel) = wgr_logger_set_level(ord(level).cint)
+proc logMessage*(level: LogLevel; msg: string) =
   wgr_logger_message(ord(level).cint, "%s", msg.cstring)
 
-proc logTrace*(msg: string) = loggerMessage(LogLevel.Trace, msg)
-proc logDebug*(msg: string) = loggerMessage(LogLevel.Debug, msg)
-proc logInfo*(msg: string) = loggerMessage(LogLevel.Info, msg)
-proc logWarn*(msg: string) = loggerMessage(LogLevel.Warn, msg)
-proc logError*(msg: string) = loggerMessage(LogLevel.Error, msg)
-proc logFatal*(msg: string) = loggerMessage(LogLevel.Fatal, msg)
+proc logTrace*(msg: string) = logMessage(LogLevel.Trace, msg)
+proc logDebug*(msg: string) = logMessage(LogLevel.Debug, msg)
+proc logInfo*(msg: string) = logMessage(LogLevel.Info, msg)
+proc logWarn*(msg: string) = logMessage(LogLevel.Warn, msg)
+proc logError*(msg: string) = logMessage(LogLevel.Error, msg)
+proc logFatal*(msg: string) = logMessage(LogLevel.Fatal, msg)
 
 # --- assets ---
 
@@ -270,138 +283,147 @@ proc assetSuccessTrampoline(path: WgrConstCstring; user: pointer) {.cdecl.} =
 proc assetFailureTrampoline(path: WgrConstCstring; user: pointer) {.cdecl.} =
   finish(user, path, false)
 
-proc assetSetHost*(host: string) = wgr_asset_set_host(host.cstring)
+proc setAssetHost*(host: string) = wgr_asset_set_host(host.cstring)
 
-proc assetEnsureAsync*(path: string; fetchUrl = ""; flags: set[AssetFlag] = {}): AssetTask =
-  ## A task to attach callbacks to (assetAddTask); none on failure.
+proc ensureAssetAsync*(path: string; fetchUrl = ""; flags: set[AssetFlag] = {}): AssetTask =
+  ## A task to attach callbacks to (task.addTask); none on failure.
   var bits = 0'u32
   for f in flags: bits = bits or (1'u32 shl ord(f))
   AssetTask(wgr_asset_ensure_async(path.cstring,
                                   (if fetchUrl.len > 0: fetchUrl.cstring else: nil), bits))
 
-proc assetAddTask*(task: AssetTask; onSuccess: AssetCallback;
-                   onFailure: AssetCallback = nil): bool {.discardable.} =
+proc addTask*(task: AssetTask; onSuccess: AssetCallback;
+              onFailure: AssetCallback = nil): bool {.discardable.} =
   ## Callbacks run on the main thread during a later frame. False (and no callback)
   ## if the task is invalid or the queue is full.
   let t = AssetCallbacks(onSuccess: onSuccess, onFailure: onFailure)
   GC_ref(t)
   result = wgr_asset_add_task(task.Handle, assetSuccessTrampoline, assetFailureTrampoline,
-                             cast[pointer](t)) == WGR_ASSET_ADD_TAWGR_OK
+                             cast[pointer](t)) == WGR_ASSET_ADD_TASK_OK
   if not result:
     GC_unref(t)
 
 # --- colors ---
 
-proc colorRgba*(r, g, b, a: int): Color = wgr_color_rgba(r.cint, g.cint, b.cint, a.cint)
+proc rgba*(r, g, b, a: int): Color = wgr_color_rgba(r.cint, g.cint, b.cint, a.cint)
 
 # --- audio / sound ---
 
-proc audioCreate*(path: string): Audio = Audio(wgr_audio_create(path.cstring))
-proc audioRelease*(audio: Audio) = wgr_audio_release(audio.Handle)
-proc soundCreate*(audio: Audio): Sound = Sound(wgr_sound_create(audio.Handle))
-proc soundSetLoop*(sound: Sound; loop: bool): bool {.discardable.} =
-  wgr_sound_set_loop(sound.Handle, loop)
-proc soundPlay*(sound: Sound): bool {.discardable.} = wgr_sound_play(sound.Handle)
+proc newAudio*(path: string): Audio = Audio(wgr_audio_create(path.cstring))
+proc release*(audio: Audio) = wgr_audio_release(audio.Handle)
+proc newSound*(audio: Audio): Sound = Sound(wgr_sound_create(audio.Handle))
+proc setLoop*(sound: Sound; loop: bool): bool {.discardable.} = wgr_sound_set_loop(sound.Handle, loop)
+proc play*(sound: Sound): bool {.discardable.} = wgr_sound_play(sound.Handle)
 
 # --- mesh / model ---
 
-proc meshCreate*(path: string): Mesh = Mesh(wgr_mesh_create(path.cstring))
-proc meshRelease*(mesh: Mesh) = wgr_mesh_release(mesh.Handle)
-proc modelCreate*(mesh: Mesh): Model = Model(wgr_model_create(mesh.Handle))
-proc modelSetAnimation*(model: Model; index: int): bool {.discardable.} =
+proc newMesh*(path: string): Mesh = Mesh(wgr_mesh_create(path.cstring))
+proc release*(mesh: Mesh) = wgr_mesh_release(mesh.Handle)
+proc newModel*(mesh: Mesh): Model = Model(wgr_model_create(mesh.Handle))
+proc setAnimation*(model: Model; index: int): bool {.discardable.} =
   wgr_model_set_animation(model.Handle, index.cint)
-proc modelSetAnimationSpeed*(model: Model; speed: float): bool {.discardable.} =
+proc setAnimationSpeed*(model: Model; speed: float): bool {.discardable.} =
   wgr_model_set_animation_speed(model.Handle, speed.cfloat)
-proc modelSetAnimationLoop*(model: Model; loop: bool): bool {.discardable.} =
+proc setAnimationLoop*(model: Model; loop: bool): bool {.discardable.} =
   wgr_model_set_animation_loop(model.Handle, loop)
-proc modelSetTransform*(model: Model; position, rotation, scale: Vec3): bool {.discardable.} =
+proc setTransform*(model: Model; position, rotation, scale: Vec3): bool {.discardable.} =
   ## position, rotation (radians) and scale in one call: the cheapest way to move it every frame
   wgr_model_set_transform(model.Handle, position.x, position.y, position.z,
                          rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
-proc modelSetPosition*(model: Model; value: Vec3): bool {.discardable.} =
+proc setPosition*(model: Model; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
   wgr_model_set_position(model.Handle, value.x, value.y, value.z)
-proc modelSetRotation*(model: Model; value: Vec3): bool {.discardable.} =
+proc setPosition*(model: Model; x, y, z: float): bool {.discardable.} =
+  wgr_model_set_position(model.Handle, x, y, z)
+proc setRotation*(model: Model; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are (radians)
   wgr_model_set_rotation(model.Handle, value.x, value.y, value.z)
-proc modelSetScale*(model: Model; value: Vec3): bool {.discardable.} =
+proc setRotation*(model: Model; x, y, z: float): bool {.discardable.} =
+  wgr_model_set_rotation(model.Handle, x, y, z)
+proc setScale*(model: Model; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
   wgr_model_set_scale(model.Handle, value.x, value.y, value.z)
-proc modelGetPosition*(model: Model): Vec3 = wgr_model_get_position(model.Handle).toNim
-proc modelGetRotation*(model: Model): Vec3 = wgr_model_get_rotation(model.Handle).toNim
-proc modelGetScale*(model: Model): Vec3 = wgr_model_get_scale(model.Handle).toNim
-proc modelSetTint*(model: Model; color: Color): bool {.discardable.} =
-  wgr_model_set_tint(model.Handle, color)
-proc modelAnimate*(model: Model; dt: float): bool {.discardable.} =
-  wgr_model_animate(model.Handle, dt.cfloat)
+proc setScale*(model: Model; x, y, z: float): bool {.discardable.} =
+  wgr_model_set_scale(model.Handle, x, y, z)
+proc getPosition*(model: Model): Vec3 = wgr_model_get_position(model.Handle).toNim
+proc getRotation*(model: Model): Vec3 = wgr_model_get_rotation(model.Handle).toNim
+proc getScale*(model: Model): Vec3 = wgr_model_get_scale(model.Handle).toNim
+proc setTint*(model: Model; color: Color): bool {.discardable.} = wgr_model_set_tint(model.Handle, color)
+proc animate*(model: Model; dt: float): bool {.discardable.} = wgr_model_animate(model.Handle, dt.cfloat)
 
 # --- texture / sprite3d ---
 
-proc textureCreate*(path: string): Texture = Texture(wgr_texture_create(path.cstring))
-proc textureRelease*(texture: Texture) = wgr_texture_release(texture.Handle)
-proc sprite3dCreate*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.Handle))
-proc sprite3dSetFacing*(sprite: Sprite3d; facing: SpriteFacing): bool {.discardable.} =
+proc newTexture*(path: string): Texture = Texture(wgr_texture_create(path.cstring))
+proc release*(texture: Texture) = wgr_texture_release(texture.Handle)
+proc newSprite3d*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.Handle))
+proc setFacing*(sprite: Sprite3d; facing: SpriteFacing): bool {.discardable.} =
   wgr_sprite3d_set_facing(sprite.Handle, ord(facing).cint)
-proc sprite3dSetTransform*(sprite: Sprite3d; position, rotation, scale: Vec3): bool {.discardable.} =
+proc setTransform*(sprite: Sprite3d; position, rotation, scale: Vec3): bool {.discardable.} =
   ## position, rotation (radians) and scale in one call: the cheapest way to move it every frame
   wgr_sprite3d_set_transform(sprite.Handle, position.x, position.y, position.z,
                             rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
-proc sprite3dSetPosition*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
+proc setPosition*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
   wgr_sprite3d_set_position(sprite.Handle, value.x, value.y, value.z)
-proc sprite3dSetRotation*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
+proc setPosition*(sprite: Sprite3d; x, y, z: float): bool {.discardable.} =
+  wgr_sprite3d_set_position(sprite.Handle, x, y, z)
+proc setRotation*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are (radians)
   wgr_sprite3d_set_rotation(sprite.Handle, value.x, value.y, value.z)
-proc sprite3dSetScale*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
+proc setRotation*(sprite: Sprite3d; x, y, z: float): bool {.discardable.} =
+  wgr_sprite3d_set_rotation(sprite.Handle, x, y, z)
+proc setScale*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
   wgr_sprite3d_set_scale(sprite.Handle, value.x, value.y, value.z)
-proc sprite3dGetPosition*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_position(sprite.Handle).toNim
-proc sprite3dGetRotation*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_rotation(sprite.Handle).toNim
-proc sprite3dGetScale*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_scale(sprite.Handle).toNim
-proc sprite3dSetTint*(sprite: Sprite3d; color: Color): bool {.discardable.} =
+proc setScale*(sprite: Sprite3d; x, y, z: float): bool {.discardable.} =
+  wgr_sprite3d_set_scale(sprite.Handle, x, y, z)
+proc getPosition*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_position(sprite.Handle).toNim
+proc getRotation*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_rotation(sprite.Handle).toNim
+proc getScale*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_scale(sprite.Handle).toNim
+proc setTint*(sprite: Sprite3d; color: Color): bool {.discardable.} =
   wgr_sprite3d_set_tint(sprite.Handle, color)
-proc sprite3dDestroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.Handle)
+proc destroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.Handle)
 
 # --- fonts / text ---
+# drawText and measureText without a font use the built-in one; on a font, that font.
 
-proc fontCreate*(path: string): Font = Font(wgr_font_create(path.cstring))
+proc newFont*(path: string): Font = Font(wgr_font_create(path.cstring))
 
-proc textDraw*(text: string; x, y, size: int; color: Color) =
-  ## the built-in font
+proc drawText*(text: string; x, y, size: int; color: Color) =
   wgr_text_draw(text.cstring, x.cint, y.cint, size.cint, color)
-proc textDrawEx*(font: Font; text: string; x, y, size: float; color: Color) =
-  wgr_text_draw_ex(font.Handle, text.cstring, x.cfloat, y.cfloat, size.cfloat, color)
-proc textMeasure*(text: string; size: int): int =
+proc measureText*(text: string; size: int): int =
   ## width in the built-in font
   wgr_text_measure(text.cstring, size.cint).int
-proc textMeasureEx*(font: Font; text: string; size: float): Vec2 =
+proc drawText*(font: Font; text: string; x, y, size: float; color: Color) =
+  wgr_text_draw_ex(font.Handle, text.cstring, x.cfloat, y.cfloat, size.cfloat, color)
+proc measureText*(font: Font; text: string; size: float): Vec2 =
   wgr_text_measure_ex(font.Handle, text.cstring, size.cfloat).toNim
-proc textDrawFpsEx*(font: Font; x, y, size: float; color: Color) =
+proc drawFps*(font: Font; x, y, size: float; color: Color) =
   ## font none: the built-in font
   wgr_text_draw_fps_ex(font.Handle, x.cfloat, y.cfloat, size.cfloat, color)
 
 # --- camera / light / scene ---
 
-proc camera3dCreate*(projection = Projection.Perspective): Camera3d =
+proc newCamera3d*(projection = Projection.Perspective): Camera3d =
   Camera3d(wgr_camera3d_create(ord(projection).cint))
-proc camera3dSetView*(camera: Camera3d; position, target: Vec3;
-                      up: Vec3 = (0.0, 1.0, 0.0)): bool {.discardable.} =
+proc setView*(camera: Camera3d; position, target: Vec3;
+              up: Vec3 = (0.0, 1.0, 0.0)): bool {.discardable.} =
   wgr_camera3d_set_view(camera.Handle, position.x, position.y, position.z,
                        target.x, target.y, target.z, up.x, up.y, up.z)
-proc lightCreate*(kind: LightKind): Light = Light(wgr_light_create(ord(kind).cint))
-proc lightSetDirection*(light: Light; direction: Vec3): bool {.discardable.} =
+proc newLight*(kind: LightKind): Light = Light(wgr_light_create(ord(kind).cint))
+proc setDirection*(light: Light; direction: Vec3): bool {.discardable.} =
   wgr_light_set_direction(light.Handle, direction.x, direction.y, direction.z)
-proc lightSetIntensity*(light: Light; intensity: float): bool {.discardable.} =
+proc setIntensity*(light: Light; intensity: float): bool {.discardable.} =
   wgr_light_set_intensity(light.Handle, intensity.cfloat)
-proc sceneCreate*(): Scene = Scene(wgr_scene_create())
-proc sceneSetActiveCamera*(scene: Scene; camera: Camera3d) =
+proc newScene*(): Scene = Scene(wgr_scene_create())
+proc setActiveCamera*(scene: Scene; camera: Camera3d) =
   wgr_scene_set_active_camera(scene.Handle, camera.Handle)
-proc sceneAdd*(scene: Scene; member: SceneMember; layer = 0): bool {.discardable.} =
+proc add*(scene: Scene; member: SceneMember; layer = 0): bool {.discardable.} =
   wgr_scene_add(scene.Handle, member.Handle, layer.cint)
-proc sceneSetAmbient*(scene: Scene; color: Color; intensity: float): bool {.discardable.} =
+proc setAmbient*(scene: Scene; color: Color; intensity: float): bool {.discardable.} =
   wgr_scene_set_ambient(scene.Handle, color, intensity.cfloat)
-proc sceneDraw*(scene: Scene) = wgr_scene_draw(scene.Handle)
-proc scenePick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
+proc draw*(scene: Scene) = wgr_scene_draw(scene.Handle)
+proc pick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
   ## camera none: the scene's active camera. Compare `handle` with typed handles:
   ## `pick.handle == model`.
   let r = wgr_scene_pick(scene.Handle, camera.Handle, x.cfloat, y.cfloat)
@@ -411,30 +433,30 @@ proc scenePick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
 
 # --- frame ---
 
-proc renderBeginFrame*() = wgr_render_begin_frame()
-proc renderEndFrame*() = wgr_render_end_frame()
-proc renderClearBackground*(color: Color) = wgr_render_clear_background(color)
-proc windowGetScreenSize*(): Vec2 = wgr_window_get_screen_size().toNim
+proc beginFrame*() = wgr_render_begin_frame()
+proc endFrame*() = wgr_render_end_frame()
+proc clearBackground*(color: Color) = wgr_render_clear_background(color)
+proc getScreenSize*(): Vec2 = wgr_window_get_screen_size().toNim
 
-proc inputGetMouseState*(): MouseState =
+proc getMouseState*(): MouseState =
   let m = wgr_input_get_mouse_state()
   MouseState(x: m.x.int, y: m.y.int, wheel: m.wheel.float, wheelX: m.wheel_x.float,
              left: m.left.int, right: m.right.int, middle: m.middle.int,
              buttons: [m.buttons[0].int, m.buttons[1].int, m.buttons[2].int],
              dx: m.dx.int, dy: m.dy.int)
 
-proc inputGetKey*(key: Key): ButtonState = ButtonState(wgr_input_get_key(ord(key).cint))
+proc getKey*(key: Key): ButtonState = ButtonState(wgr_input_get_key(ord(key).cint))
 proc isKeyPressed*(key: Key): bool =
   ## went down this frame
-  inputGetKey(key) == ButtonState.Pressed
+  getKey(key) == ButtonState.Pressed
 proc isKeyDown*(key: Key): bool =
   ## held, including the frame it went down
-  inputGetKey(key) in {ButtonState.Pressed, ButtonState.Down}
+  getKey(key) in {ButtonState.Pressed, ButtonState.Down}
 proc isKeyReleased*(key: Key): bool =
   ## went up this frame
-  inputGetKey(key) == ButtonState.Released
+  getKey(key) == ButtonState.Released
 
-proc inputGetKeyboardState*(): KeyboardState = KeyboardState(c: wgr_input_get_keyboard_state())
+proc getKeyboardState*(): KeyboardState = KeyboardState(c: wgr_input_get_keyboard_state())
 
 proc `[]`*(state: KeyboardState; key: Key): ButtonState = ButtonState(state.c.keys[ord(key)])
 proc isPressed*(state: KeyboardState; key: Key): bool =

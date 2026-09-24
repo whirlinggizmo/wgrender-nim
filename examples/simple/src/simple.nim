@@ -52,67 +52,67 @@ var g: App
 
 proc load(path: string; onReady: AssetCallback) =
   let onFailed = proc (path: string) = logError("failed to import asset: " & path)
-  if not assetAddTask(assetEnsureAsync(path), onReady, onFailed):
+  if not ensureAssetAsync(path).addTask(onReady, onFailed):
     onFailed(path)
 
 proc loadAssets() =
   load(BgmPath) do (path: string):
-    let audio = audioCreate(path)
-    g.bgm = soundCreate(audio)
-    audioRelease(audio) # the sound holds its own reference
-    soundSetLoop(g.bgm, true)
-    soundPlay(g.bgm)
+    let audio = newAudio(path)
+    g.bgm = newSound(audio)
+    audio.release() # the sound holds its own reference
+    g.bgm.setLoop(true)
+    g.bgm.play()
 
   load(ModelPath) do (path: string):
-    let mesh = meshCreate(path)
-    g.model = modelCreate(mesh)
-    meshRelease(mesh) # the model holds its own reference
-    modelSetAnimation(g.model, 1)
-    modelSetAnimationSpeed(g.model, 1.0)
-    modelSetAnimationLoop(g.model, true)
-    modelSetPosition(g.model, (0.0, 0.0, 0.0))
-    modelSetTint(g.model, ColorRaywhite)
-    sceneAdd(g.scene, g.model)
+    let mesh = newMesh(path)
+    g.model = newModel(mesh)
+    mesh.release() # the model holds its own reference
+    g.model.setAnimation(1)
+    g.model.setAnimationSpeed(1.0)
+    g.model.setAnimationLoop(true)
+    g.model.setPosition(0, 0, 0)
+    g.model.setTint(ColorRaywhite)
+    g.scene.add(g.model)
 
   load(SpritePath) do (path: string):
-    let texture = textureCreate(path)
-    g.sprite = sprite3dCreate(texture)
-    textureRelease(texture) # the sprite holds its own reference
-    sprite3dSetFacing(g.sprite, SpriteFacing.Free) # librl's default: oriented by its rotation
-    sprite3dSetPosition(g.sprite, (0.0, SpriteYOffset, 0.0))
-    sprite3dSetTint(g.sprite, ColorRaywhite)
-    sceneAdd(g.scene, g.sprite)
+    let texture = newTexture(path)
+    g.sprite = newSprite3d(texture)
+    texture.release() # the sprite holds its own reference
+    g.sprite.setFacing(SpriteFacing.Free) # librl's default: oriented by its rotation
+    g.sprite.setPosition(0, SpriteYOffset, 0)
+    g.sprite.setTint(ColorRaywhite)
+    g.scene.add(g.sprite)
 
   # Fonts are sized per draw call in wgrender, so one font handle serves any size.
   load(DebugFontPath) do (path: string):
-    g.debugFont = fontCreate(path)
+    g.debugFont = newFont(path)
   load(KomikaFontPath) do (path: string):
-    g.komikaFont = fontCreate(path)
+    g.komikaFont = newFont(path)
 
 # --- lifecycle ---
 
 proc onInit() =
-  assetSetHost(AssetBase)
-  loggerSetLevel(LogLevel.Warn)
+  setAssetHost(AssetBase)
+  setLogLevel(LogLevel.Warn)
   setTargetFps(60)
 
   g.countdownTimer = 30.0
   g.message = "Hello from wgrender simple (Nim)!"
   g.platformText = "Platform: " & getPlatform()
 
-  g.camera = camera3dCreate(Projection.Perspective) # default fov: pi/4 (45 degrees)
-  camera3dSetView(g.camera, position = (12.0, 12.0, 12.0), target = (0.0, 1.0, 0.0))
-  g.scene = sceneCreate()
-  sceneSetActiveCamera(g.scene, g.camera)
+  g.camera = newCamera3d(Projection.Perspective) # default fov: pi/4 (45 degrees)
+  g.camera.setView(position = (12.0, 12.0, 12.0), target = (0.0, 1.0, 0.0))
+  g.scene = newScene()
+  g.scene.setActiveCamera(g.camera)
 
   # same lighting as librl's c-simple: a directional light plus ambient 0.25
-  let sun = lightCreate(LightKind.Directional)
-  lightSetDirection(sun, (-0.6, -1.0, -0.5))
-  lightSetIntensity(sun, 3.0)
-  sceneAdd(g.scene, sun)
-  sceneSetAmbient(g.scene, ColorWhite, 0.25)
-  g.backgroundColor = colorRgba(245, 245, 245, 255)
-  g.greyAlpha = colorRgba(0, 0, 0, 128)
+  let sun = newLight(LightKind.Directional)
+  sun.setDirection((-0.6, -1.0, -0.5))
+  sun.setIntensity(3.0)
+  g.scene.add(sun)
+  g.scene.setAmbient(ColorWhite, 0.25)
+  g.backgroundColor = rgba(245, 245, 245, 255)
+  g.greyAlpha = rgba(0, 0, 0, 128)
 
   loadAssets()
 
@@ -121,13 +121,13 @@ proc update(dt: float) =
   g.countdownTimer -= dt
 
   if not g.model.isNone:
-    modelAnimate(g.model, dt)
+    g.model.animate(dt)
   if not g.sprite.isNone:
     let y = sin(g.elapsed * BobSpeed) * BobHeight + SpriteYOffset
-    sprite3dSetPosition(g.sprite, (0.0, y, 0.0))
+    g.sprite.setPosition(0, y, 0)
 
 proc updatePickMessage(mouse: MouseState) =
-  let pick = scenePick(g.scene, mouse.x.float, mouse.y.float)
+  let pick = g.scene.pick(mouse.x.float, mouse.y.float)
   let what =
     if not pick.hit: ""
     elif pick.handle == g.model: "Model"
@@ -142,15 +142,15 @@ proc updatePickMessage(mouse: MouseState) =
 # Draw with the TTF font once it's loaded, the built-in font until then.
 proc drawText(font: Font; text: string; x, y: float; size: int; color: Color) =
   if not font.isNone:
-    textDrawEx(font, text, x, y, size.float, color)
+    font.drawText(text, x, y, size.float, color)
   else:
-    textDraw(text, x.int, y.int, size, color)
+    drawText(text, x.int, y.int, size, color)
 
 proc drawCenteredMessage() =
-  let screen = windowGetScreenSize()
+  let screen = getScreenSize()
   let size =
-    if not g.komikaFont.isNone: textMeasureEx(g.komikaFont, g.message, KomikaFontSize)
-    else: (textMeasure(g.message, KomikaFontSize).float, KomikaFontSize.float)
+    if not g.komikaFont.isNone: g.komikaFont.measureText(g.message, KomikaFontSize)
+    else: (measureText(g.message, KomikaFontSize).float, KomikaFontSize.float)
   drawText(g.komikaFont, g.message, (screen.x - size.x) / 2, (screen.y - size.y) / 2,
            KomikaFontSize, ColorBlue)
 
@@ -163,10 +163,10 @@ proc drawOverlay(mouse: MouseState) =
            10, 76, DebugFontSize, ColorBlack)
   drawText(g.debugFont, g.platformText, 10, 96, DebugFontSize, ColorBlack)
 
-  textDrawFpsEx(g.debugFont, 10, 10, DebugFontSize, g.greyAlpha)
+  g.debugFont.drawFps(10, 10, DebugFontSize, g.greyAlpha)
 
 proc frame(dt, tickFraction: float) =
-  let mouse = inputGetMouseState()
+  let mouse = getMouseState()
 
   # Escape quits on desktop; a web page has nothing to quit to.
   when not defined(emscripten):
@@ -176,12 +176,12 @@ proc frame(dt, tickFraction: float) =
   update(dt)
   updatePickMessage(mouse)
 
-  renderBeginFrame()
-  renderClearBackground(g.backgroundColor)
-  sceneDraw(g.scene)
+  beginFrame()
+  clearBackground(g.backgroundColor)
+  g.scene.draw()
   drawCenteredMessage()
   drawOverlay(mouse)
-  renderEndFrame()
+  endFrame()
 
 when isMainModule:
   initValues(ScreenWidth, ScreenHeight, "simple (wgrender, Nim)",

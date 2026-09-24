@@ -3,3 +3,5 @@ out/
 __pycache__/
 # `nim c -r src/simple.nim` leaves the binary beside it
 /examples/simple/src/simple
+# nim c -r tests/tcalls.nim leaves the binary beside it
+/tests/tcalls

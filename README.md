@@ -8,12 +8,41 @@ cross-binding benchmarks. It is not a complete binding yet.
 wgrender.nimble          the package: srcDir src, `import wgr`
 src/wgr.nim              the binding: Nim types, a distinct type per handle kind, closures
 src/wgr/raw.nim          the C API as is, declared against wgrender's headers
+tests/tcalls.nim         how the calls are written, and that a wrong handle kind doesn't compile
 examples/simple/         the port of wgrender's examples/simple.c (src/simple.nim)
 examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c
                          (every example builds with the same config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
 ```
+
+## Calling it
+
+The calls read as Nim rather than C. A call on a handle is its action, written on the
+handle; a constructor is `new<Kind>`; anything else is a plain proc:
+
+```nim
+let model = newModel(mesh)          # wgr_model_create
+model.setPosition((1.0, 2.0, 3.0))  # wgr_model_set_position
+model.setPosition(1, 2, 3)          # the same, x, y and z (see below)
+beginFrame()                        # wgr_render_begin_frame
+drawText("hi", 10, 10, 18, ColorBlack)    # wgr_text_draw: the built-in font
+font.drawText("hi", 10, 40, 24, ColorBlue) # wgr_text_draw_ex: a font of its own
+wgr.endFrame()                      # any call, qualified by the module
+```
+
+The handle kinds are distinct types, and the calls are overloaded on them, so a
+Sprite3d where a Model belongs doesn't compile. A call without a handle carries its
+section as a noun only where its action alone would be ambiguous: `drawText`,
+`measureText`, `setAssetHost`, `ensureAssetAsync`, and `setLogLevel` with the `log*`
+calls (std/logging has `debug`, `info`, `warn` and `error` of its own). `bool` results
+are discardable. The types stay Nim's: strings, ints, floats, tuples, enums and
+closures, never the C types.
+
+`setPosition`, `setRotation` and `setScale` also take `x, y, z` beside the `Vec3`, so
+`m.setPosition(1, 2, 3)` takes plain int literals; wgrender-hx takes only a `Vec3`.
+
+`nim c -r tests/tcalls.nim` checks how calls are written, and what doesn't compile.
 
 ## Build
 
