@@ -38,15 +38,17 @@ const
   LayerGround = 0
   LayerProps = 1
 
-  # cells of the sheet, in texture pixels
-  Grass: Rect = (0.0, 0.0, 16.0, 16.0)
-  Sand: Rect = (16.0, 0.0, 16.0, 16.0)
-  Water: Rect = (32.0, 0.0, 16.0, 16.0)
-  Stone: Rect = (48.0, 0.0, 16.0, 16.0)
-  Tree: Rect = (0.0, 16.0, 16.0, 32.0)
-  Flag: Rect = (16.0, 16.0, 16.0, 32.0)
-  Coin: Rect = (32.0, 16.0, 16.0, 16.0)
-  Rock: Rect = (48.0, 16.0, 16.0, 16.0)
+  # cells of the sheet, in texture pixels: x, y, width, height (wgrender's
+  # tools/gen_tiles.py; each cell has a gutter around it that repeats its edge, so
+  # sampling never reaches a neighbour)
+  Grass: Rect = (2.0, 2.0, 16.0, 16.0)
+  Sand: Rect = (22.0, 2.0, 16.0, 16.0)
+  Water: Rect = (42.0, 2.0, 16.0, 16.0)
+  Stone: Rect = (62.0, 2.0, 16.0, 16.0)
+  Tree: Rect = (2.0, 22.0, 16.0, 32.0)
+  Flag: Rect = (22.0, 22.0, 16.0, 32.0)
+  Coin: Rect = (42.0, 22.0, 16.0, 16.0)
+  Rock: Rect = (62.0, 22.0, 16.0, 16.0)
 
 type App = object
   scene: Scene

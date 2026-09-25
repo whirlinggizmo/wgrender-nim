@@ -5,9 +5,10 @@
 ## its range (the small sphere marks it; shapes are unlit, so it shows the light's
 ## color); a white spotlight sweeping across them from above. Behind them stand
 ## billboard sprites with a built-in material: they take the same lights as the
-## models, facing the camera, with a normal map for relief. Scenes start unlit (no
-## lights, no ambient); everything here is explicit. Keys: 1 sun, 2 point light,
-## 3 spotlight.
+## models, facing the camera. Each shows one cell of the tilemap example's sprite
+## sheet, and the sheet's normal map gives it relief: the normal map is sampled through
+## the same region. Scenes start unlit (no lights, no ambient); everything here is
+## explicit. Keys: 1 sun, 2 point light, 3 spotlight.
 
 import std/math
 import wgr
@@ -23,7 +24,16 @@ const
 
   ModelPath = "models/gumshoe/gumshoe.glb"
   SpritePath = "textures/tiles.png"
-  NormalPath = "textures/tiles_normal.png"
+  NormalPath = "textures/tiles_sheet_normal.png" # wgrender's tools/gen_tiles.py
+
+  # the sprites' cells in the sheet (pixels, from wgrender's tools/gen_tiles.py) and
+  # their world height; all 1.6 wide
+  SpriteCells = [
+    (x: 62.0, y: 2.0, width: 16.0, height: 16.0, worldHeight: 1.6), # stone
+    (x: 2.0, y: 22.0, width: 16.0, height: 32.0, worldHeight: 3.2), # tree
+    (x: 42.0, y: 22.0, width: 16.0, height: 16.0, worldHeight: 1.6), # coin
+    (x: 62.0, y: 22.0, width: 16.0, height: 16.0, worldHeight: 1.6), # rock
+  ]
 
 type App = object
   scene: Scene
@@ -89,10 +99,16 @@ proc onInit() =
   g.spriteMaterial = newMaterial(MaterialShading.Pbr)
   g.spriteMaterial.setFloat("metallic", 0.0)
   g.spriteMaterial.setFloat("roughness", 0.55)
+  # cells sit side by side in the sheet: clamp, so none reaches into the next
+  g.spriteMaterial.setTextureSampling("normal_texture", TextureWrap.Clamp, TextureWrap.Clamp,
+                                      TextureFilter.Linear)
   for i, sprite in g.sprites.mpairs:
+    let cell = SpriteCells[i]
     sprite = newSprite3d()
-    sprite.setTransform((-3.0 + 2.0 * i.float, 1.0, -2.5), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
-    sprite.setSize(1.6)
+    sprite.setTransform((-3.0 + 2.0 * i.float, 0.2, -2.5), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
+    sprite.setSource(cell.x, cell.y, cell.width, cell.height)
+    sprite.setExtent(1.6, cell.worldHeight)
+    sprite.setPivot(0.5, 1.0) # standing on their bottom edge
     sprite.setAlphaMode(AlphaMode.Mask, 0.5)
     sprite.setMaterial(g.spriteMaterial)
     g.scene.add(sprite)
@@ -104,6 +120,7 @@ proc onInit() =
     mesh.release() # the models hold their own references
   load(SpritePath) do (path: string):
     let texture = newTexture(path)
+    texture.setSampling(TextureWrap.Clamp, TextureWrap.Clamp, TextureFilter.Nearest)
     for sprite in g.sprites: sprite.setTexture(texture)
     texture.release() # the sprites hold their own references
   load(NormalPath) do (path: string):
