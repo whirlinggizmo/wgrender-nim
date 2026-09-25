@@ -82,6 +82,14 @@ doAssert not compiles(getGamepadButton(0, 0))                    # a number is n
 doAssert not compiles(getGamepadAxis(0, GamepadButton.South))    # nor a button an axis
 doAssert MaxGamepads == 4
 
+# 2D shapes: points are Vec2, rectangles x, y, width, height
+doAssert compiles(drawCircle((10.0, 20.0), 5.0, ColorGold))
+doAssert compiles(drawRectangle(0, 0, 10, 10, ColorOrange))
+doAssert compiles(drawLine((0.0, 0.0), (1.0, 1.0), ColorWhite))
+doAssert compiles(drawRoundedRectangle(0, 0, 10, 10, 2, ColorWhite))
+doAssert compiles(drawBorder(0, 0, 10, 10, 1, 1, 1, 1, color = ColorWhite))
+doAssert not compiles(drawCircle(10.0, 20.0, 5.0, ColorGold))    # a center is a point
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)

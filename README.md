@@ -13,6 +13,7 @@ tests/tcalls.nim         how the calls are written, and that a wrong handle kind
 examples/simple/         the port of wgrender's examples/simple.c (src/simple.nim)
 examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c
 examples/particles/      the port of wgrender's examples/particles.c: 3D and 2D emitters
+examples/gamepad/        the port of wgrender's examples/gamepad.c: every connected pad, live
                          (every example builds with the same config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
@@ -62,7 +63,7 @@ CI runs both, with `tcalls` and both examples, whenever the submodule moves.
 
 ```sh
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
-cd wgrender-nim/examples/simple     # or examples/stress, examples/particles
+cd wgrender-nim/examples/simple     # or examples/stress, particles, gamepad
 nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
 nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim serve                # http://localhost:8000/

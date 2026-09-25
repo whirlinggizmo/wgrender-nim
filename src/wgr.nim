@@ -675,6 +675,40 @@ proc draw*(e: Emitter) =
   (when e is Emitter3d: wgr_emitter3d_draw(e.raw)
    else: wgr_emitter2d_draw(e.raw))
 
+# --- 2D shapes, immediate (wgr_shape2d.h) ---
+# Screen space: logical pixels, top-left origin, y down. Drawn between beginFrame and
+# endFrame, in call order.
+
+proc drawRectangle*(x, y, width, height: float; color: Color) =
+  wgr_shape2d_draw_rectangle(x.cfloat, y.cfloat, width.cfloat, height.cfloat, color)
+proc drawRectangleLines*(x, y, width, height: float; color: Color) =
+  wgr_shape2d_draw_rectangle_lines(x.cfloat, y.cfloat, width.cfloat, height.cfloat, color)
+proc drawRoundedRectangle*(x, y, width, height: float;
+                           topLeft, topRight, bottomRight, bottomLeft: float; color: Color) =
+  ## each corner rounded by its own radius, clamped to half the shorter side
+  wgr_shape2d_draw_rounded_rectangle(x.cfloat, y.cfloat, width.cfloat, height.cfloat,
+                                    topLeft.cfloat, topRight.cfloat, bottomRight.cfloat,
+                                    bottomLeft.cfloat, color)
+proc drawRoundedRectangle*(x, y, width, height, radius: float; color: Color) =
+  ## every corner rounded by `radius`
+  drawRoundedRectangle(x, y, width, height, radius, radius, radius, radius, color)
+proc drawBorder*(x, y, width, height: float; left, top, right, bottom: float;
+                 topLeft = 0.0; topRight = 0.0; bottomRight = 0.0; bottomLeft = 0.0;
+                 color: Color) =
+  ## a border just inside the rectangle, each side its own width and each outer corner
+  ## its own radius, as in CSS
+  wgr_shape2d_draw_border(x.cfloat, y.cfloat, width.cfloat, height.cfloat, left.cfloat, top.cfloat,
+                         right.cfloat, bottom.cfloat, topLeft.cfloat, topRight.cfloat,
+                         bottomRight.cfloat, bottomLeft.cfloat, color)
+proc drawLine*(start, finish: Vec2; color: Color) =
+  wgr_shape2d_draw_line(start.x, start.y, finish.x, finish.y, color)
+proc drawCircle*(center: Vec2; radius: float; color: Color) =
+  wgr_shape2d_draw_circle(center.x, center.y, radius.cfloat, color)
+proc drawCircleLines*(center: Vec2; radius: float; color: Color) =
+  wgr_shape2d_draw_circle_lines(center.x, center.y, radius.cfloat, color)
+proc drawTriangle*(a, b, c: Vec2; color: Color) =
+  wgr_shape2d_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y, color)
+
 # --- debug ---
 
 proc enableFps*(x, y, fontSize: int) =

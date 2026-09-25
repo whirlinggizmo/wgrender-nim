@@ -24,7 +24,7 @@ than it would be linking a prebuilt `libwgrender.a`.
 
 ```sh
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
-cd wgrender-nim/examples/simple     # or examples/stress, examples/particles
+cd wgrender-nim/examples/simple     # or examples/stress, particles, gamepad
 nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
 nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim build all            # both
