@@ -108,6 +108,16 @@ doAssert getMonitorName(0) is string
 doAssert compiles(setTick(proc (dt: float) = discard, 60))
 doAssert getTime() is float
 
+# constructors are new<Kind>, a variant after the kind: newMeshCube, newTextureTarget
+doAssert newMeshCube(1, 1, 1) is Mesh
+doAssert newMeshSphere(1.0) is Mesh
+doAssert newTextureTarget(64, 64) is Texture
+doAssert newMaterial() is Material
+doAssert newMaterial(newShader("x")) is Material
+doAssert newModel() is Model
+doAssert compiles(newModel().setMaterial(0, newMaterial(MaterialShading.Unlit)))
+doAssert compiles(newLight(LightKind.Spot).setSpotCone(0.1, 0.2))
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)

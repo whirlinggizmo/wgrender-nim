@@ -18,7 +18,7 @@ examples/simple/         the port of wgrender's examples/simple.c (src/simple.ni
 examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c
 examples/particles/      the port of wgrender's examples/particles.c: 3D and 2D emitters
 examples/gamepad/        the port of wgrender's examples/gamepad.c: every connected pad, live
-examples/hello/, hello3d/, tick/, window/, textures/
+examples/hello/, hello3d/, tick/, window/, textures/, lights/, materials/
                          ports of wgrender's examples of those names
                          (every example builds with the same config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)

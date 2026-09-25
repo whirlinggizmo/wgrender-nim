@@ -34,6 +34,8 @@ type
   Mesh* = distinct Handle
   Texture* = distinct Handle
   Font* = distinct Handle
+  Material* = distinct Handle ## how a model or sprite's surface is shaded
+  Shader* = distinct Handle   ## a custom material shader (.wgrshader)
   # Objects: placed or heard, each with its own state
   Sound* = distinct Handle
   Model* = distinct Handle
@@ -47,7 +49,7 @@ type
   Shape3d* = distinct Handle   ## a cube, sphere, rectangle, circle or line in the world
   AssetTask* = distinct Handle
 
-  AnyHandle* = Audio | Mesh | Texture | Font | Sound | Model | Sprite3d | Sprite2d |
+  AnyHandle* = Audio | Mesh | Texture | Font | Material | Shader | Sound | Model | Sprite3d | Sprite2d |
                Shape3d | Camera3d | Light | Scene | Emitter3d | Emitter2d | AssetTask
   SceneMember* = Model | Sprite3d | Sprite2d | Shape3d | Light | Emitter3d | Emitter2d
     ## what a scene's add takes
@@ -56,6 +58,7 @@ type
 
   Vec2* = tuple[x, y: float]
   Vec3* = tuple[x, y, z: float]
+  Vec4* = tuple[x, y, z, w: float]
   Rect* = tuple[x, y, width, height: float] ## a region: of a texture in its pixels, or of the screen
 
   MouseState* = object
@@ -96,6 +99,11 @@ type
     Mask   ## fully opaque or fully transparent, split at a cutoff; depth written
     Blend  ## alpha blended, back to front
     Add    ## added to what's behind (glows, sparks); not sorted, no depth write
+
+  MaterialShading* {.pure.} = enum
+    Pbr    ## glTF metallic-roughness, lit by scene lights
+    Unlit  ## base color x texture x tint; ignores lights
+    Custom ## a custom shader (newMaterial(shader)); not for newMaterial(shading)
 
   TextureWrap* {.pure.} = enum
     Repeat ## tile
@@ -431,6 +439,7 @@ proc play*(sound: Sound): bool {.discardable.} = wgr_sound_play(sound.raw)
 proc newMesh*(path: string): Mesh = Mesh(wgr_mesh_create(path.cstring))
 proc release*(mesh: Mesh) = wgr_mesh_release(mesh.raw)
 proc newModel*(mesh: Mesh): Model = Model(wgr_model_create(mesh.raw))
+proc newModel*(): Model = Model(wgr_model_create(0)) ## its mesh set later (setMesh)
 proc setAnimation*(model: Model; index: int): bool {.discardable.} =
   wgr_model_set_animation(model.raw, index.cint)
 proc setAnimationSpeed*(model: Model; speed: float): bool {.discardable.} =
@@ -461,6 +470,107 @@ proc getRotation*(model: Model): Vec3 = wgr_model_get_rotation(model.raw).toNim
 proc getScale*(model: Model): Vec3 = wgr_model_get_scale(model.raw).toNim
 proc setTint*(model: Model; color: Color): bool {.discardable.} = wgr_model_set_tint(model.raw, color)
 proc animate*(model: Model; dt: float): bool {.discardable.} = wgr_model_animate(model.raw, dt.cfloat)
+
+# The built-in meshes: new<Kind><Variant>, as newTextureTarget. Centered on the origin,
+# to be placed and scaled by the model; one material slot (white, not metallic,
+# roughness 0.5), for setMaterial. A size at or below 0 gives none; counts are clamped
+# to their ranges. The defaults are wgrender-hx's.
+
+proc newMeshPlane*(width, length: float; subdivisions = 0): Mesh =
+  ## flat in XZ facing +Y; `subdivisions` 0..256 adds that many cells each way
+  Mesh(wgr_mesh_create_plane(width.cfloat, length.cfloat, subdivisions.cint))
+proc newMeshCube*(width, height, length: float): Mesh =
+  ## each face its own vertices, so the edges stay sharp; textured 0..1 per face
+  Mesh(wgr_mesh_create_cube(width.cfloat, height.cfloat, length.cfloat))
+proc newMeshSphere*(radius: float; rings = 16; segments = 32): Mesh =
+  ## `rings` 2..256 pole to pole, `segments` 3..512 around
+  Mesh(wgr_mesh_create_sphere(radius.cfloat, rings.cint, segments.cint))
+proc newMeshCylinder*(radius, height: float; segments = 32): Mesh =
+  ## capped; `segments` 3..512 around
+  Mesh(wgr_mesh_create_cylinder(radius.cfloat, height.cfloat, segments.cint))
+proc newMeshCone*(radius, height: float; segments = 32): Mesh =
+  ## tip up, capped base
+  Mesh(wgr_mesh_create_cone(radius.cfloat, height.cfloat, segments.cint))
+proc newMeshCapsule*(radius, height: float; rings = 8; segments = 32): Mesh =
+  ## `height` is end to end, at least twice `radius`; less than that gives a sphere
+  Mesh(wgr_mesh_create_capsule(radius.cfloat, height.cfloat, rings.cint, segments.cint))
+proc newMeshTorus*(radius, thickness: float; rings = 16; segments = 32): Mesh =
+  ## around y: `radius` reaches the middle of the tube, `thickness` is its radius
+  Mesh(wgr_mesh_create_torus(radius.cfloat, thickness.cfloat, rings.cint, segments.cint))
+proc getMaterialCount*(mesh: Mesh): int = wgr_mesh_get_material_count(mesh.raw).int
+proc getMaterial*(mesh: Mesh; slot: int): Material = Material(wgr_mesh_get_material(mesh.raw, slot.cint))
+
+proc setMesh*(model: Model; mesh: Mesh): bool {.discardable.} = wgr_model_set_mesh(model.raw, mesh.raw)
+proc setMaterial*(model: Model; slot: int; material: Material): bool {.discardable.} =
+  ## this model's own material for a slot of its mesh, over the mesh's
+  wgr_model_set_material(model.raw, slot.cint, material.raw)
+proc getMaterial*(model: Model; slot: int): Material = Material(wgr_model_get_material(model.raw, slot.cint))
+proc setVisible*(model: Model; visible: bool): bool {.discardable.} = wgr_model_set_visible(model.raw, visible)
+proc isVisible*(model: Model): bool = wgr_model_is_visible(model.raw)
+proc setPickable*(model: Model; pickable: bool): bool {.discardable.} = wgr_model_set_pickable(model.raw, pickable)
+proc isPickable*(model: Model): bool = wgr_model_is_pickable(model.raw)
+proc setEnabled*(model: Model; enabled: bool): bool {.discardable.} = wgr_model_set_enabled(model.raw, enabled)
+proc isEnabled*(model: Model): bool = wgr_model_is_enabled(model.raw)
+proc setCastsShadow*(model: Model; casts: bool): bool {.discardable.} = wgr_model_set_casts_shadow(model.raw, casts)
+proc castsShadow*(model: Model): bool = wgr_model_casts_shadow(model.raw)
+proc setReceivesShadow*(model: Model; receives: bool): bool {.discardable.} =
+  wgr_model_set_receives_shadow(model.raw, receives)
+proc receivesShadow*(model: Model): bool = wgr_model_receives_shadow(model.raw)
+proc draw*(model: Model) =
+  ## immediate, in 3D mode, for one not in a scene: unlit (base color x tint)
+  wgr_model_draw(model.raw)
+proc destroy*(model: Model) = wgr_model_destroy(model.raw)
+proc getAnimationCount*(model: Model): int = wgr_model_get_animation_count(model.raw).int
+proc setAnimationTime*(model: Model; seconds: float): bool {.discardable.} =
+  wgr_model_set_animation_time(model.raw, seconds.cfloat)
+proc getAnimationTime*(model: Model): float = wgr_model_get_animation_time(model.raw).float
+proc getAnimationDuration*(model: Model; animation: int): float =
+  wgr_model_get_animation_duration(model.raw, animation.cint).float
+proc isReady*(model: Model): bool = wgr_model_is_ready(model.raw) ## its mesh has loaded
+
+# --- materials and shaders (wgr_material.h, wgr_shader.h) ---
+# Parameters by name: the built-in shading's ("base_color", "roughness",
+# "base_color_texture", ...) or a custom shader's own.
+
+proc newMaterial*(shading = MaterialShading.Pbr): Material =
+  Material(wgr_material_create(ord(shading).cint))
+proc newShader*(path: string): Shader = Shader(wgr_shader_create(path.cstring)) ## a .wgrshader
+proc release*(shader: Shader) = wgr_shader_release(shader.raw)
+proc newMaterial*(shader: Shader): Material =
+  ## drawn by a custom shader: its parameters are the ones the shader declares
+  Material(wgr_material_create_custom(shader.raw))
+proc getShader*(material: Material): Shader = Shader(wgr_material_get_shader(material.raw))
+proc release*(material: Material) = wgr_material_release(material.raw)
+proc setShading*(material: Material; shading: MaterialShading): bool {.discardable.} =
+  wgr_material_set_shading(material.raw, ord(shading).cint)
+proc getShading*(material: Material): MaterialShading =
+  MaterialShading(wgr_material_get_shading(material.raw))
+proc setAlphaMode*(material: Material; mode: AlphaMode; cutoff = 0.5): bool {.discardable.} =
+  wgr_material_set_alpha_mode(material.raw, ord(mode).cint, cutoff.cfloat)
+proc getAlphaMode*(material: Material): AlphaMode = AlphaMode(wgr_material_get_alpha_mode(material.raw))
+proc setDoubleSided*(material: Material; doubleSided: bool): bool {.discardable.} =
+  wgr_material_set_double_sided(material.raw, doubleSided)
+proc isDoubleSided*(material: Material): bool = wgr_material_is_double_sided(material.raw)
+proc setInt*(material: Material; name: string; value: int): bool {.discardable.} =
+  wgr_material_set_int(material.raw, name.cstring, value.cint)
+proc setFloat*(material: Material; name: string; value: float): bool {.discardable.} =
+  wgr_material_set_float(material.raw, name.cstring, value.cfloat)
+proc setVec2*(material: Material; name: string; value: Vec2): bool {.discardable.} =
+  wgr_material_set_vec2(material.raw, name.cstring, value.x, value.y)
+proc setVec3*(material: Material; name: string; value: Vec3): bool {.discardable.} =
+  wgr_material_set_vec3(material.raw, name.cstring, value.x, value.y, value.z)
+proc setVec4*(material: Material; name: string; value: Vec4): bool {.discardable.} =
+  wgr_material_set_vec4(material.raw, name.cstring, value.x, value.y, value.z, value.w)
+proc setColor*(material: Material; name: string; color: Color): bool {.discardable.} =
+  ## a vec3 or vec4 parameter (a vec3 ignores alpha)
+  wgr_material_set_color(material.raw, name.cstring, color)
+proc setTexture*(material: Material; name: string; texture: Texture): bool {.discardable.} =
+  wgr_material_set_texture(material.raw, name.cstring, texture.raw)
+proc setTextureSampling*(material: Material; name: string; wrapU, wrapV: TextureWrap;
+                         filter: TextureFilter): bool {.discardable.} =
+  ## how texture `name` is sampled (default Repeat, Linear)
+  wgr_material_set_texture_sampling(material.raw, name.cstring, ord(wrapU).cint, ord(wrapV).cint,
+                                   ord(filter).cint)
 
 # --- texture / sprite3d ---
 
@@ -493,6 +603,7 @@ proc drawNineSlice*(texture: Texture; source: Rect; left, top, right, bottom: fl
                              left, top, right, bottom, target.x, target.y, target.width,
                              target.height, tint)
 proc newSprite3d*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.raw))
+proc newSprite3d*(): Sprite3d = Sprite3d(wgr_sprite3d_create(0)) ## its texture set later (setTexture)
 proc setFacing*(sprite: Sprite3d; facing: SpriteFacing): bool {.discardable.} =
   wgr_sprite3d_set_facing(sprite.raw, ord(facing).cint)
 proc setTransform*(sprite: Sprite3d; position, rotation, scale: Vec3): bool {.discardable.} =
@@ -520,6 +631,35 @@ proc getScale*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_scale(sprite.raw).toNi
 proc setTint*(sprite: Sprite3d; color: Color): bool {.discardable.} =
   wgr_sprite3d_set_tint(sprite.raw, color)
 proc destroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.raw)
+proc setTexture*(sprite: Sprite3d; texture: Texture): bool {.discardable.} =
+  wgr_sprite3d_set_texture(sprite.raw, texture.raw)
+proc setSize*(sprite: Sprite3d; size: float): bool {.discardable.} =
+  ## its larger side, in world units, the other kept in proportion
+  wgr_sprite3d_set_size(sprite.raw, size.cfloat)
+proc setExtent*(sprite: Sprite3d; width, height: float): bool {.discardable.} =
+  ## width and height in world units
+  wgr_sprite3d_set_extent(sprite.raw, width.cfloat, height.cfloat)
+proc setSource*(sprite: Sprite3d; x, y, width, height: float): bool {.discardable.} =
+  wgr_sprite3d_set_source(sprite.raw, x.cfloat, y.cfloat, width.cfloat, height.cfloat)
+proc setPivot*(sprite: Sprite3d; x, y: float): bool {.discardable.} =
+  wgr_sprite3d_set_pivot(sprite.raw, x.cfloat, y.cfloat)
+proc setVisible*(sprite: Sprite3d; visible: bool): bool {.discardable.} = wgr_sprite3d_set_visible(sprite.raw, visible)
+proc isVisible*(sprite: Sprite3d): bool = wgr_sprite3d_is_visible(sprite.raw)
+proc setPickable*(sprite: Sprite3d; pickable: bool): bool {.discardable.} =
+  wgr_sprite3d_set_pickable(sprite.raw, pickable)
+proc isPickable*(sprite: Sprite3d): bool = wgr_sprite3d_is_pickable(sprite.raw)
+proc setEnabled*(sprite: Sprite3d; enabled: bool): bool {.discardable.} = wgr_sprite3d_set_enabled(sprite.raw, enabled)
+proc isEnabled*(sprite: Sprite3d): bool = wgr_sprite3d_is_enabled(sprite.raw)
+proc setAlphaMode*(sprite: Sprite3d; mode: AlphaMode; cutoff = 0.5): bool {.discardable.} =
+  wgr_sprite3d_set_alpha_mode(sprite.raw, ord(mode).cint, cutoff.cfloat)
+proc getAlphaMode*(sprite: Sprite3d): AlphaMode = AlphaMode(wgr_sprite3d_get_alpha_mode(sprite.raw))
+proc setMaterial*(sprite: Sprite3d; material: Material): bool {.discardable.} =
+  ## lit by a material instead of drawn unlit
+  wgr_sprite3d_set_material(sprite.raw, material.raw)
+proc getMaterial*(sprite: Sprite3d): Material = Material(wgr_sprite3d_get_material(sprite.raw))
+proc setPickAlphaTest*(sprite: Sprite3d; enable: bool; threshold = 0.5): bool {.discardable.} =
+  wgr_sprite3d_set_pick_alpha_test(sprite.raw, enable, threshold.cfloat)
+proc draw*(sprite: Sprite3d) = wgr_sprite3d_draw(sprite.raw) ## immediate, in 3D mode
 
 # --- fonts / text ---
 # drawText and measureText without a font use the built-in one; on a font, that font.
@@ -575,6 +715,47 @@ proc setDirection*(light: Light; direction: Vec3): bool {.discardable.} =
   wgr_light_set_direction(light.raw, direction.x, direction.y, direction.z)
 proc setIntensity*(light: Light; intensity: float): bool {.discardable.} =
   wgr_light_set_intensity(light.raw, intensity.cfloat)
+proc destroy*(light: Light) = wgr_light_destroy(light.raw)
+proc getKind*(light: Light): LightKind = LightKind(wgr_light_get_type(light.raw))
+proc getIntensity*(light: Light): float = wgr_light_get_intensity(light.raw).float
+proc setColor*(light: Light; color: Color): bool {.discardable.} = wgr_light_set_color(light.raw, color)
+proc getColor*(light: Light): Color = wgr_light_get_color(light.raw)
+proc setPosition*(light: Light; value: Vec3): bool {.discardable.} =
+  ## a point or spot light's; a directional one has none
+  wgr_light_set_position(light.raw, value.x, value.y, value.z)
+proc setPosition*(light: Light; x, y, z: float): bool {.discardable.} = wgr_light_set_position(light.raw, x, y, z)
+proc getPosition*(light: Light): Vec3 = wgr_light_get_position(light.raw).toNim
+proc getDirection*(light: Light): Vec3 = wgr_light_get_direction(light.raw).toNim
+proc setRange*(light: Light; range: float): bool {.discardable.} =
+  ## how far a point or spot light reaches
+  wgr_light_set_range(light.raw, range.cfloat)
+proc getRange*(light: Light): float = wgr_light_get_range(light.raw).float
+proc setSpotCone*(light: Light; innerAngle, outerAngle: float): bool {.discardable.} =
+  ## full brightness inside `innerAngle`, fading to none at `outerAngle` (radians)
+  wgr_light_set_spot_cone(light.raw, innerAngle.cfloat, outerAngle.cfloat)
+proc getSpotInnerAngle*(light: Light): float = wgr_light_get_spot_inner_angle(light.raw).float
+proc getSpotOuterAngle*(light: Light): float = wgr_light_get_spot_outer_angle(light.raw).float
+proc setEnabled*(light: Light; enabled: bool): bool {.discardable.} = wgr_light_set_enabled(light.raw, enabled)
+proc isEnabled*(light: Light): bool = wgr_light_is_enabled(light.raw)
+proc setCastsShadows*(light: Light; casts: bool): bool {.discardable.} =
+  wgr_light_set_casts_shadows(light.raw, casts)
+proc castsShadows*(light: Light): bool = wgr_light_get_casts_shadows(light.raw)
+proc setShadowDistance*(light: Light; distance: float): bool {.discardable.} =
+  wgr_light_set_shadow_distance(light.raw, distance.cfloat)
+proc getShadowDistance*(light: Light): float = wgr_light_get_shadow_distance(light.raw).float
+proc setShadowMapSize*(light: Light; size: int): bool {.discardable.} =
+  wgr_light_set_shadow_map_size(light.raw, size.cint)
+proc getShadowMapSize*(light: Light): int = wgr_light_get_shadow_map_size(light.raw).int
+proc setShadowStrength*(light: Light; strength: float): bool {.discardable.} =
+  wgr_light_set_shadow_strength(light.raw, strength.cfloat)
+proc getShadowStrength*(light: Light): float = wgr_light_get_shadow_strength(light.raw).float
+proc setShadowColor*(light: Light; color: Color): bool {.discardable.} = wgr_light_set_shadow_color(light.raw, color)
+proc getShadowColor*(light: Light): Color = wgr_light_get_shadow_color(light.raw)
+proc setShadowBias*(light: Light; constant, slope: float): bool {.discardable.} =
+  wgr_light_set_shadow_bias(light.raw, constant.cfloat, slope.cfloat)
+proc getShadowBiasConstant*(light: Light): float = wgr_light_get_shadow_bias_constant(light.raw).float
+proc getShadowBiasSlope*(light: Light): float = wgr_light_get_shadow_bias_slope(light.raw).float
+
 proc newScene*(): Scene = Scene(wgr_scene_create())
 proc setActiveCamera*(scene: Scene; camera: Camera3d) =
   wgr_scene_set_active_camera(scene.raw, camera.raw)
@@ -727,7 +908,7 @@ proc setStretch*(e: Emitter; seconds: float): bool {.discardable.} =
   ## streaks along the motion, as long as the distance moved in `seconds` (0: off)
   (when e is Emitter3d: wgr_emitter3d_set_stretch(e.raw, seconds.cfloat)
    else: wgr_emitter2d_set_stretch(e.raw, seconds.cfloat))
-proc setAlphaMode*(e: Emitter; mode: AlphaMode; cutoff = 0.0): bool {.discardable.} =
+proc setAlphaMode*(e: Emitter; mode: AlphaMode; cutoff = 0.5): bool {.discardable.} =
   ## default AlphaMode.Add
   (when e is Emitter3d: wgr_emitter3d_set_alpha_mode(e.raw, ord(mode).cint, cutoff.cfloat)
    else: wgr_emitter2d_set_alpha_mode(e.raw, ord(mode).cint, cutoff.cfloat))
@@ -860,12 +1041,15 @@ proc isPickable*(sprite: Sprite2d): bool = wgr_sprite2d_is_pickable(sprite.raw)
 proc setEnabled*(sprite: Sprite2d; enabled: bool): bool {.discardable.} =
   wgr_sprite2d_set_enabled(sprite.raw, enabled)
 proc isEnabled*(sprite: Sprite2d): bool = wgr_sprite2d_is_enabled(sprite.raw)
-proc setAlphaMode*(sprite: Sprite2d; mode: AlphaMode; cutoff = 0.0): bool {.discardable.} =
+proc setAlphaMode*(sprite: Sprite2d; mode: AlphaMode; cutoff = 0.5): bool {.discardable.} =
   wgr_sprite2d_set_alpha_mode(sprite.raw, ord(mode).cint, cutoff.cfloat)
 proc getAlphaMode*(sprite: Sprite2d): AlphaMode = AlphaMode(wgr_sprite2d_get_alpha_mode(sprite.raw))
 proc setPickAlphaTest*(sprite: Sprite2d; enable: bool; threshold = 0.5): bool {.discardable.} =
   ## picked only where its texture's alpha is above `threshold`
   wgr_sprite2d_set_pick_alpha_test(sprite.raw, enable, threshold.cfloat)
+proc setMaterial*(sprite: Sprite2d; material: Material): bool {.discardable.} =
+  wgr_sprite2d_set_material(sprite.raw, material.raw)
+proc getMaterial*(sprite: Sprite2d): Material = Material(wgr_sprite2d_get_material(sprite.raw))
 proc draw*(sprite: Sprite2d) = wgr_sprite2d_draw(sprite.raw) ## immediate, for one not in a scene
 
 # --- 3D shapes (wgr_shape3d.h) ---
