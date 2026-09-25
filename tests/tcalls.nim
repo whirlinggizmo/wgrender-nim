@@ -118,6 +118,20 @@ doAssert newModel() is Model
 doAssert compiles(newModel().setMaterial(0, newMaterial(MaterialShading.Unlit)))
 doAssert compiles(newLight(LightKind.Spot).setSpotCone(0.1, 0.2))
 
+# text, 2D shapes, touch, render, handle kinds
+doAssert newText2d(Font(0)) is Text2d
+doAssert newText3d(Font(0)) is Text3d
+doAssert compiles(newText3d(Font(0)).setAlign(AlignX.Center, AlignY.Bottom))
+doAssert not compiles(newText3d(Font(0)).setAlign(AlignY.Bottom, AlignX.Center))  # the axes are their own types
+doAssert compiles(newScene().add(newText2d(Font(0))))
+doAssert compiles(newShape2d().setRectangle(10, 10, cornerRadius = 2))
+doAssert getTouch(0) is Touch
+doAssert getTouch(0).state is ButtonState
+doAssert getMouseButton(MouseButton.Right) is ButtonState
+doAssert compiles(pushClip((0.0, 0.0, 10.0, 10.0)))
+doAssert Handle(0).getKind is HandleKind
+doAssert Model(0).getKind is HandleKind
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)

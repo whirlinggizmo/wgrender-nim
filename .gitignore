@@ -5,3 +5,4 @@ __pycache__/
 /examples/simple/src/simple
 # nim c -r tests/tcalls.nim leaves the binary beside it
 /tests/tcalls
+/tests/tevents

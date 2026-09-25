@@ -74,3 +74,6 @@ jobs:
 
       - name: How calls are written, and what doesn't compile
         run: cd tests && nim c -r tcalls.nim
+
+      - name: Events through a running wgrender (headless: no window or GPU)
+        run: cd tests && WGR_HEADLESS_FRAMES=2 nim c -d:wgrHeadless -r tevents.nim

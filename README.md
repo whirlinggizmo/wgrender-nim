@@ -10,9 +10,12 @@ published from `main` by `.github/workflows/pages.yml` (`tools/site.py` builds t
 
 ```
 wgrender.nimble          the package: srcDir src, `import wgr`
-src/wgr.nim              the binding: Nim types, a distinct type per handle kind, closures
+src/wgr.nim              the binding (`import wgr`): re-exports src/wgr/<header>.nim, one module
+                         per wgrender header, in Nim's types: a distinct type per handle kind,
+                         closures
 src/wgr/raw.nim          the whole C API as is, generated from wgrender's headers
-src/wgr/build.nim        compiles wgrender into the program, from its build.json
+src/wgr/internal/        not the API: build.nim compiles wgrender into the program from its
+                         build.json; convert.nim, handles and vectors to and from C
 tests/tcalls.nim         how the calls are written, and that a wrong handle kind doesn't compile
 examples/simple/         the port of wgrender's examples/simple.c (src/simple.nim)
 examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c

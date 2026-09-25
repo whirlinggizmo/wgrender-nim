@@ -219,7 +219,7 @@ def generate(wgrender, clang, flags):
 ## wgrender {'.'.join(version) or '?'}, {count} headers.
 {DIGEST_TAG}{digest}
 
-import ./build # compiles wgrender into the program, from its build.json
+import ./internal/build # compiles wgrender into the program, from its build.json
 
 type
   WgrHandle* = cuint

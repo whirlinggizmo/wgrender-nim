@@ -11,7 +11,7 @@
 ## moving and changing monitor report "not supported here". On the web the canvas is
 ## the window: resizing works, moving and other monitors don't.
 
-import std/[math, strformat, strutils]
+import std/[math, strformat]
 import wgr
 
 var

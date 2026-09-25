@@ -1,4 +1,4 @@
-# The tests build wgrender in, as any program importing wgr does (src/wgr/build.nim,
+# The tests build wgrender in, as any program importing wgr does (src/wgr/internal/build.nim,
 # which also finds wgrender: WGRENDER_DIR, a ../wgrender-c checkout, or the submodule).
 import std/[os, strutils]
 

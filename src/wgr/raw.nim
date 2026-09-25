@@ -7,7 +7,7 @@
 ## wgrender 0.0.1, 34 headers.
 ## wgrender-headers: 017dae86087a6947
 
-import ./build # compiles wgrender into the program, from its build.json
+import ./internal/build # compiles wgrender into the program, from its build.json
 
 type
   WgrHandle* = cuint

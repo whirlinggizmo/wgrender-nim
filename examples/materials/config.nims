@@ -2,7 +2,7 @@
 # source is src/<name>.nim. Every example's config.nims is this same file.
 #
 #   nim build desktop     out/<platform>/<variant>/<name>: out/linux/release/, out/windows/mingw/,
-#                         ... (wgrender compiled in, by src/wgr/build.nim); with MSVC,
+#                         ... (wgrender compiled in, by src/wgr/internal/build.nim); with MSVC,
 #                         nim build --cc:vcc desktop: out/windows/msvc/
 #   nim build web         out/web/<variant>/ (out/web/webgl2 by default): <name>.js/.wasm +
 #                         wgrender's page shell
@@ -76,7 +76,7 @@ proc webVariant(): string =
 switch("hints", "off")
 switch("path", repoDir / "src") # the binding: wgr.nim, wgr/raw.nim
 
-# wgrender itself is compiled by src/wgr/build.nim, into the program, from its
+# wgrender itself is compiled by src/wgr/internal/build.nim, into the program, from its
 # build.json: nothing here builds or links it. What's left is the target.
 when defined(emscripten):
   switch("nimcache", workDir / webVariant() / "nimcache")

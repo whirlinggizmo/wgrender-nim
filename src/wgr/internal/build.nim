@@ -32,7 +32,7 @@ proc slashes(path: string): string =
   path.replace('\\', '/')
 
 proc findWgrender(): string {.compileTime.} =
-  let here = currentSourcePath().slashes.parentDir()   # src/wgr
+  let here = currentSourcePath().slashes.parentDir().parentDir()   # src/wgr (this is in internal/)
   let repo = here.parentDir().parentDir()
   var candidates: seq[string]
   if wgrenderDirDefine.len > 0: candidates.add wgrenderDirDefine.slashes
