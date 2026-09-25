@@ -182,7 +182,7 @@ proc frame(dt, tickFraction: float) =
                          3.5 * sin(g.time * 1.3))
 
   let mouse = getMouseState()
-  if mouse.left == ord(ButtonState.Pressed) and not g.confetti.isNone:
+  if mouse.left == ButtonState.Pressed and not g.confetti.isNone:
     burstConfetti(mouse.x.float, mouse.y.float)
   if isKeyPressed(Key.Space) and not g.fountain.isNone:
     setPaused(not g.paused)

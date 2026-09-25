@@ -66,6 +66,13 @@ doAssert compiles(newScene().add(e3))
 doAssert compiles(newScene().add(e2, 1))
 doAssert not compiles(e3.setAnimation(1))
 
+# only Nim types reach a consumer: a handle is not a number, and state is an enum
+doAssert not compiles(h + 1)
+doAssert not compiles(Handle(0) == 0)
+doAssert newScene().pick(0.0, 0.0).handle is Handle
+doAssert getMouseState().left is ButtonState
+doAssert compiles(getMouseState().left == ButtonState.Pressed)
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)

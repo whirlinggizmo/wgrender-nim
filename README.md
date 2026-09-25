@@ -54,7 +54,8 @@ constants. Rerun it when wgrender's API moves; `--check` fails if it is stale.
 `tools/coverage.py --check` then checks it independently: clang compiles a
 `_Static_assert` per declaration against the headers (every function's parameter and
 return types, every struct field, every constant). `wgr.nim` wraps part of it by hand,
-in Nim's terms (`--list` names the rest); anything not wrapped yet is in `wgr/raw`.
+in Nim's terms only: coverage also fails if anything it exports names a C type
+(`--list` names what isn't wrapped yet, which is in `wgr/raw`).
 CI runs both, with `tcalls` and both examples, whenever the submodule moves.
 
 ## Build

@@ -17,6 +17,8 @@ declaration against wgrender's headers itself:
   - every C struct it imports has the fields raw.nim gives it, of the same types
   - every constant it copies has the header's value
   - every function the headers declare is in raw.nim
+  - nothing src/wgr.nim exports names a C type (cstring, cint, ptr, raw's Wgr* and C*
+    types, ...): a consumer of wgr sees only Nim types, and C stays in wgr/raw
 
 It does that the way the C compiler would, because it asks it: it writes a C file of
 _Static_asserts from raw.nim's declarations (the function's type against the one
@@ -228,6 +230,49 @@ def header_functions(clang, wgrender, flags):
     return functions
 
 
+# --- wgr.nim: only Nim types -----------------------------------------------------------
+
+# raw.nim's types and Nim's C-compatible ones: what a consumer of wgr.nim never sees
+C_TYPES = re.compile(r'\b(cstring|cint|cuint|cfloat|cdouble|cchar|cshort|cushort|clong|culong|'
+                     r'clonglong|culonglong|csize_t|pointer|ptr|Wgr[A-Z]\w*|C[A-Z][a-z]\w*)\b')
+
+
+def signature_at(code, i):
+    """A proc's generic parameters, parameters, return type and pragmas: from just after
+    its name to the `=` that starts its body, outside any brackets."""
+    depth, start = 0, i
+    while i < len(code):
+        ch = code[i]
+        if ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth -= 1
+        elif ch == '=' and depth == 0 and code[i - 1] == ' ' and code[i + 1:i + 2] in (' ', '\n'):
+            return code[start:i]
+        i += 1
+    return code[start:]
+
+
+def c_types_in_wrappers(text):
+    """Every exported proc, type, constant and object field in wgr.nim whose declaration
+    names a C type. wgr.nim is the Nim layer: C types stay in wgr/raw."""
+    found = []
+    code = re.sub(r'##[^\n]*|(?<!\{\.)#[^\n]*', '', text)  # comments, not pragmas
+    code = re.sub(r'\{\.emit:.*?\.\}', '', code, flags=re.S)  # the emitted C
+    for m in re.finditer(r'^(?:proc|func|template|iterator|converter) (`?[\w=$]+`?)\*', code, re.M):
+        signature = signature_at(code, m.end())
+        signature = re.sub(r'\{\..*?\.\}', '', signature)  # pragmas: {.discardable.} and the like
+        for c in C_TYPES.findall(signature):
+            found.append(f'wgr.nim: {m.group(1)} takes or returns {c}, a C type')
+    for m in re.finditer(r'^  (\w+)\*\s*(?:\{\.[^}]*\.\})?\s*=\s*([^\n]*)$', code, re.M):
+        for c in C_TYPES.findall(m.group(2)):
+            found.append(f'wgr.nim: {m.group(1)} is {c}, a C type')
+    for m in re.finditer(r'^    ([\w, *]+\*[\w, *]*):\s*([^\n]*)$', code, re.M):
+        for c in C_TYPES.findall(m.group(2)):
+            found.append(f'wgr.nim: field {m.group(1).strip()} is {c}, a C type')
+    return found
+
+
 # --- the checks ----------------------------------------------------------------------
 
 def asserts(raw, functions):
@@ -284,6 +329,7 @@ def main():
     # raw.nim is generated whole (tools/gen_raw.py); wgr.nim wraps part of it by hand
     wrappers = WRAPPERS.read_text(encoding='utf-8')
     wrapped = [p for p in procs if re.search(rf'\b{p["name"]}\b', wrappers)]
+    problems += c_types_in_wrappers(wrappers)
 
     clang = find_clang()
     if clang is None:

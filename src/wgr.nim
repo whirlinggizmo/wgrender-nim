@@ -1,7 +1,12 @@
 ## wgrender for Nim: the C API (wgr/raw) wrapped in stock Nim types.
 ##
+## Nothing exported here names a C type: a consumer never writes a cstring, a cint, a
+## cast or a WGR_ constant. tools/coverage.py --check (CI) fails on any exported proc,
+## type, constant or field that does; C stays in wgr/raw.
+##
 ## - strings, ints and floats instead of cstring / cint / cfloat
-## - Nim enums and a `set` of window flags instead of C constants
+## - Nim enums and a `set` of window flags instead of C constants (button states too)
+## - handles as distinct types, the untyped `Handle` included: not a number
 ## - vectors as tuples, mouse and pick state as Nim objects
 ## - closures for callbacks, called through cdecl trampolines
 ## - a distinct type per handle kind (Model, Texture, Font, ...), so passing the
@@ -21,8 +26,8 @@
 import wgr/raw
 
 type
-  Handle* = WgrHandle ## an untyped wgrender handle (a pick result's hit); 0 is none
-  Color* = WgrColor   ## packed 0xRRGGBBAA, a value
+  Handle* = distinct uint32 ## an untyped wgrender handle (a pick result's hit); 0 is none
+  Color* = uint32           ## packed 0xRRGGBBAA, a value
 
   # Resources: loaded, reference counted, shared
   Audio* = distinct Handle
@@ -52,8 +57,8 @@ type
   MouseState* = object
     x*, y*: int
     wheel*, wheelX*: float ## scroll this frame: about one unit per wheel notch
-    left*, right*, middle*: int
-    buttons*: array[3, int]
+    left*, right*, middle*: ButtonState
+    buttons*: array[3, ButtonState] ## left, right, middle, by index
     dx*, dy*: int
 
   PickResult* = object
@@ -154,11 +159,18 @@ const
   ColorMagenta* = WGR_COLOR_MAGENTA
   ColorRaywhite* = WGR_COLOR_RAYWHITE
 
-proc `==`*[T: AnyHandle](a, b: T): bool = a.Handle == b.Handle
-proc `==`*(a: Handle; b: AnyHandle): bool = a == b.Handle
-proc `==`*(a: AnyHandle; b: Handle): bool = a.Handle == b
-proc `$`*(h: AnyHandle): string = $h.Handle
-proc isNone*(h: AnyHandle): bool = h.Handle == 0 ## not created (yet), or creation failed
+# The C side's handle, for raw's calls; not exported, so a handle stays a handle.
+template raw(h: Handle): WgrHandle = WgrHandle(uint32(h))
+template raw(h: AnyHandle): WgrHandle = WgrHandle(uint32(Handle(h)))
+
+proc `==`*(a, b: Handle): bool {.borrow.}
+proc `$`*(h: Handle): string {.borrow.}
+proc isNone*(h: Handle): bool = uint32(h) == 0 ## no handle: nothing hit, or none made
+proc `==`*[T: AnyHandle](a, b: T): bool = a.raw == b.raw
+proc `==`*(a: Handle; b: AnyHandle): bool = a.raw == b.raw
+proc `==`*(a: AnyHandle; b: Handle): bool = a.raw == b.raw
+proc `$`*(h: AnyHandle): string = $h.raw
+proc isNone*(h: AnyHandle): bool = h.raw == 0 ## not created (yet), or creation failed
 
 # The checks include wgr.h themselves: otherwise they depend on some other call in the
 # same C file having pulled it in, which a program that only type-checks never does.
@@ -333,7 +345,7 @@ proc addTask*(task: AssetTask; onSuccess: AssetCallback;
   ## if the task is invalid or the queue is full.
   let t = AssetCallbacks(onSuccess: onSuccess, onFailure: onFailure)
   GC_ref(t)
-  result = wgr_asset_add_task(task.Handle, assetSuccessTrampoline, assetFailureTrampoline,
+  result = wgr_asset_add_task(task.raw, assetSuccessTrampoline, assetFailureTrampoline,
                              cast[pointer](t)) == WGR_ASSET_ADD_TASK_OK
   if not result:
     GC_unref(t)
@@ -345,79 +357,79 @@ proc rgba*(r, g, b, a: int): Color = wgr_color_rgba(r.cint, g.cint, b.cint, a.ci
 # --- audio / sound ---
 
 proc newAudio*(path: string): Audio = Audio(wgr_audio_create(path.cstring))
-proc release*(audio: Audio) = wgr_audio_release(audio.Handle)
-proc newSound*(audio: Audio): Sound = Sound(wgr_sound_create(audio.Handle))
-proc setLoop*(sound: Sound; loop: bool): bool {.discardable.} = wgr_sound_set_loop(sound.Handle, loop)
-proc play*(sound: Sound): bool {.discardable.} = wgr_sound_play(sound.Handle)
+proc release*(audio: Audio) = wgr_audio_release(audio.raw)
+proc newSound*(audio: Audio): Sound = Sound(wgr_sound_create(audio.raw))
+proc setLoop*(sound: Sound; loop: bool): bool {.discardable.} = wgr_sound_set_loop(sound.raw, loop)
+proc play*(sound: Sound): bool {.discardable.} = wgr_sound_play(sound.raw)
 
 # --- mesh / model ---
 
 proc newMesh*(path: string): Mesh = Mesh(wgr_mesh_create(path.cstring))
-proc release*(mesh: Mesh) = wgr_mesh_release(mesh.Handle)
-proc newModel*(mesh: Mesh): Model = Model(wgr_model_create(mesh.Handle))
+proc release*(mesh: Mesh) = wgr_mesh_release(mesh.raw)
+proc newModel*(mesh: Mesh): Model = Model(wgr_model_create(mesh.raw))
 proc setAnimation*(model: Model; index: int): bool {.discardable.} =
-  wgr_model_set_animation(model.Handle, index.cint)
+  wgr_model_set_animation(model.raw, index.cint)
 proc setAnimationSpeed*(model: Model; speed: float): bool {.discardable.} =
-  wgr_model_set_animation_speed(model.Handle, speed.cfloat)
+  wgr_model_set_animation_speed(model.raw, speed.cfloat)
 proc setAnimationLoop*(model: Model; loop: bool): bool {.discardable.} =
-  wgr_model_set_animation_loop(model.Handle, loop)
+  wgr_model_set_animation_loop(model.raw, loop)
 proc setTransform*(model: Model; position, rotation, scale: Vec3): bool {.discardable.} =
   ## position, rotation (radians) and scale in one call: the cheapest way to move it every frame
-  wgr_model_set_transform(model.Handle, position.x, position.y, position.z,
+  wgr_model_set_transform(model.raw, position.x, position.y, position.z,
                          rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
 proc setPosition*(model: Model; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
-  wgr_model_set_position(model.Handle, value.x, value.y, value.z)
+  wgr_model_set_position(model.raw, value.x, value.y, value.z)
 proc setPosition*(model: Model; x, y, z: float): bool {.discardable.} =
-  wgr_model_set_position(model.Handle, x, y, z)
+  wgr_model_set_position(model.raw, x, y, z)
 proc setRotation*(model: Model; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are (radians)
-  wgr_model_set_rotation(model.Handle, value.x, value.y, value.z)
+  wgr_model_set_rotation(model.raw, value.x, value.y, value.z)
 proc setRotation*(model: Model; x, y, z: float): bool {.discardable.} =
-  wgr_model_set_rotation(model.Handle, x, y, z)
+  wgr_model_set_rotation(model.raw, x, y, z)
 proc setScale*(model: Model; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
-  wgr_model_set_scale(model.Handle, value.x, value.y, value.z)
+  wgr_model_set_scale(model.raw, value.x, value.y, value.z)
 proc setScale*(model: Model; x, y, z: float): bool {.discardable.} =
-  wgr_model_set_scale(model.Handle, x, y, z)
-proc getPosition*(model: Model): Vec3 = wgr_model_get_position(model.Handle).toNim
-proc getRotation*(model: Model): Vec3 = wgr_model_get_rotation(model.Handle).toNim
-proc getScale*(model: Model): Vec3 = wgr_model_get_scale(model.Handle).toNim
-proc setTint*(model: Model; color: Color): bool {.discardable.} = wgr_model_set_tint(model.Handle, color)
-proc animate*(model: Model; dt: float): bool {.discardable.} = wgr_model_animate(model.Handle, dt.cfloat)
+  wgr_model_set_scale(model.raw, x, y, z)
+proc getPosition*(model: Model): Vec3 = wgr_model_get_position(model.raw).toNim
+proc getRotation*(model: Model): Vec3 = wgr_model_get_rotation(model.raw).toNim
+proc getScale*(model: Model): Vec3 = wgr_model_get_scale(model.raw).toNim
+proc setTint*(model: Model; color: Color): bool {.discardable.} = wgr_model_set_tint(model.raw, color)
+proc animate*(model: Model; dt: float): bool {.discardable.} = wgr_model_animate(model.raw, dt.cfloat)
 
 # --- texture / sprite3d ---
 
 proc newTexture*(path: string): Texture = Texture(wgr_texture_create(path.cstring))
-proc release*(texture: Texture) = wgr_texture_release(texture.Handle)
-proc newSprite3d*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.Handle))
+proc release*(texture: Texture) = wgr_texture_release(texture.raw)
+proc newSprite3d*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.raw))
 proc setFacing*(sprite: Sprite3d; facing: SpriteFacing): bool {.discardable.} =
-  wgr_sprite3d_set_facing(sprite.Handle, ord(facing).cint)
+  wgr_sprite3d_set_facing(sprite.raw, ord(facing).cint)
 proc setTransform*(sprite: Sprite3d; position, rotation, scale: Vec3): bool {.discardable.} =
   ## position, rotation (radians) and scale in one call: the cheapest way to move it every frame
-  wgr_sprite3d_set_transform(sprite.Handle, position.x, position.y, position.z,
+  wgr_sprite3d_set_transform(sprite.raw, position.x, position.y, position.z,
                             rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
 proc setPosition*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
-  wgr_sprite3d_set_position(sprite.Handle, value.x, value.y, value.z)
+  wgr_sprite3d_set_position(sprite.raw, value.x, value.y, value.z)
 proc setPosition*(sprite: Sprite3d; x, y, z: float): bool {.discardable.} =
-  wgr_sprite3d_set_position(sprite.Handle, x, y, z)
+  wgr_sprite3d_set_position(sprite.raw, x, y, z)
 proc setRotation*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are (radians)
-  wgr_sprite3d_set_rotation(sprite.Handle, value.x, value.y, value.z)
+  wgr_sprite3d_set_rotation(sprite.raw, value.x, value.y, value.z)
 proc setRotation*(sprite: Sprite3d; x, y, z: float): bool {.discardable.} =
-  wgr_sprite3d_set_rotation(sprite.Handle, x, y, z)
+  wgr_sprite3d_set_rotation(sprite.raw, x, y, z)
 proc setScale*(sprite: Sprite3d; value: Vec3): bool {.discardable.} =
   ## one part of the transform, leaving the others as they are
-  wgr_sprite3d_set_scale(sprite.Handle, value.x, value.y, value.z)
+  wgr_sprite3d_set_scale(sprite.raw, value.x, value.y, value.z)
 proc setScale*(sprite: Sprite3d; x, y, z: float): bool {.discardable.} =
-  wgr_sprite3d_set_scale(sprite.Handle, x, y, z)
-proc getPosition*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_position(sprite.Handle).toNim
-proc getRotation*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_rotation(sprite.Handle).toNim
-proc getScale*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_scale(sprite.Handle).toNim
+  wgr_sprite3d_set_scale(sprite.raw, x, y, z)
+proc getPosition*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_position(sprite.raw).toNim
+proc getRotation*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_rotation(sprite.raw).toNim
+proc getScale*(sprite: Sprite3d): Vec3 = wgr_sprite3d_get_scale(sprite.raw).toNim
 proc setTint*(sprite: Sprite3d; color: Color): bool {.discardable.} =
-  wgr_sprite3d_set_tint(sprite.Handle, color)
-proc destroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.Handle)
+  wgr_sprite3d_set_tint(sprite.raw, color)
+proc destroy*(sprite: Sprite3d) = wgr_sprite3d_destroy(sprite.raw)
 
 # --- fonts / text ---
 # drawText and measureText without a font use the built-in one; on a font, that font.
@@ -430,12 +442,12 @@ proc measureText*(text: string; size: int): int =
   ## width in the built-in font
   wgr_text_measure(text.cstring, size.cint).int
 proc drawText*(font: Font; text: string; x, y, size: float; color: Color) =
-  wgr_text_draw_ex(font.Handle, text.cstring, x.cfloat, y.cfloat, size.cfloat, color)
+  wgr_text_draw_ex(font.raw, text.cstring, x.cfloat, y.cfloat, size.cfloat, color)
 proc measureText*(font: Font; text: string; size: float): Vec2 =
-  wgr_text_measure_ex(font.Handle, text.cstring, size.cfloat).toNim
+  wgr_text_measure_ex(font.raw, text.cstring, size.cfloat).toNim
 proc drawFps*(font: Font; x, y, size: float; color: Color) =
   ## font none: the built-in font
-  wgr_text_draw_fps_ex(font.Handle, x.cfloat, y.cfloat, size.cfloat, color)
+  wgr_text_draw_fps_ex(font.raw, x.cfloat, y.cfloat, size.cfloat, color)
 
 # --- camera / light / scene ---
 
@@ -443,26 +455,26 @@ proc newCamera3d*(projection = Projection.Perspective): Camera3d =
   Camera3d(wgr_camera3d_create(ord(projection).cint))
 proc setView*(camera: Camera3d; position, target: Vec3;
               up: Vec3 = (0.0, 1.0, 0.0)): bool {.discardable.} =
-  wgr_camera3d_set_view(camera.Handle, position.x, position.y, position.z,
+  wgr_camera3d_set_view(camera.raw, position.x, position.y, position.z,
                        target.x, target.y, target.z, up.x, up.y, up.z)
 proc newLight*(kind: LightKind): Light = Light(wgr_light_create(ord(kind).cint))
 proc setDirection*(light: Light; direction: Vec3): bool {.discardable.} =
-  wgr_light_set_direction(light.Handle, direction.x, direction.y, direction.z)
+  wgr_light_set_direction(light.raw, direction.x, direction.y, direction.z)
 proc setIntensity*(light: Light; intensity: float): bool {.discardable.} =
-  wgr_light_set_intensity(light.Handle, intensity.cfloat)
+  wgr_light_set_intensity(light.raw, intensity.cfloat)
 proc newScene*(): Scene = Scene(wgr_scene_create())
 proc setActiveCamera*(scene: Scene; camera: Camera3d) =
-  wgr_scene_set_active_camera(scene.Handle, camera.Handle)
+  wgr_scene_set_active_camera(scene.raw, camera.raw)
 proc add*(scene: Scene; member: SceneMember; layer = 0): bool {.discardable.} =
-  wgr_scene_add(scene.Handle, member.Handle, layer.cint)
+  wgr_scene_add(scene.raw, member.raw, layer.cint)
 proc setAmbient*(scene: Scene; color: Color; intensity: float): bool {.discardable.} =
-  wgr_scene_set_ambient(scene.Handle, color, intensity.cfloat)
-proc draw*(scene: Scene) = wgr_scene_draw(scene.Handle)
+  wgr_scene_set_ambient(scene.raw, color, intensity.cfloat)
+proc draw*(scene: Scene) = wgr_scene_draw(scene.raw)
 proc pick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
   ## camera none: the scene's active camera. Compare `handle` with typed handles:
   ## `pick.handle == model`.
-  let r = wgr_scene_pick(scene.Handle, camera.Handle, x.cfloat, y.cfloat)
-  PickResult(hit: r.hit, handle: r.handle, distance: r.distance.float,
+  let r = wgr_scene_pick(scene.raw, camera.raw, x.cfloat, y.cfloat)
+  PickResult(hit: r.hit, handle: Handle(r.handle), distance: r.distance.float,
              pointLocal: r.point_local.toNim, pointWorld: r.point_world.toNim,
              normalLocal: r.normal_local.toNim, normalWorld: r.normal_world.toNim)
 
@@ -470,161 +482,161 @@ proc pick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
 # The two share every call but the ones with a position or a direction, which take a
 # Vec3 in the world or a Vec2 in pixels.
 
-proc newEmitter3d*(texture: Texture): Emitter3d = Emitter3d(wgr_emitter3d_create(texture.Handle))
-proc newEmitter2d*(texture: Texture): Emitter2d = Emitter2d(wgr_emitter2d_create(texture.Handle))
-proc destroy*(e: Emitter3d) = wgr_emitter3d_destroy(e.Handle)
-proc destroy*(e: Emitter2d) = wgr_emitter2d_destroy(e.Handle)
+proc newEmitter3d*(texture: Texture): Emitter3d = Emitter3d(wgr_emitter3d_create(texture.raw))
+proc newEmitter2d*(texture: Texture): Emitter2d = Emitter2d(wgr_emitter2d_create(texture.raw))
+proc destroy*(e: Emitter3d) = wgr_emitter3d_destroy(e.raw)
+proc destroy*(e: Emitter2d) = wgr_emitter2d_destroy(e.raw)
 
 proc setSource*(e: Emitter; x, y, width, height: float): bool {.discardable.} =
   ## the region of the texture each particle shows, in texture pixels; width or height
   ## <= 0: the whole texture
-  (when e is Emitter3d: wgr_emitter3d_set_source(e.Handle, x.cfloat, y.cfloat, width.cfloat, height.cfloat)
-   else: wgr_emitter2d_set_source(e.Handle, x.cfloat, y.cfloat, width.cfloat, height.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_source(e.raw, x.cfloat, y.cfloat, width.cfloat, height.cfloat)
+   else: wgr_emitter2d_set_source(e.raw, x.cfloat, y.cfloat, width.cfloat, height.cfloat))
 proc setFrames*(e: Emitter; columns, rows: int; count = 0; perSecond = 0.0): bool {.discardable.} =
   ## a flipbook: the source in columns x rows frames, the first `count` used (0: all);
   ## perSecond 0 plays them once over each particle's life, above 0 loops at that rate
-  (when e is Emitter3d: wgr_emitter3d_set_frames(e.Handle, columns.cint, rows.cint, count.cint, perSecond.cfloat)
-   else: wgr_emitter2d_set_frames(e.Handle, columns.cint, rows.cint, count.cint, perSecond.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_frames(e.raw, columns.cint, rows.cint, count.cint, perSecond.cfloat)
+   else: wgr_emitter2d_set_frames(e.raw, columns.cint, rows.cint, count.cint, perSecond.cfloat))
 
 proc setPosition*(e: Emitter3d; value: Vec3): bool {.discardable.} =
   ## a move: the steady spawns spread along the way, and particles inherit its velocity
-  wgr_emitter3d_set_position(e.Handle, value.x, value.y, value.z)
+  wgr_emitter3d_set_position(e.raw, value.x, value.y, value.z)
 proc setPosition*(e: Emitter3d; x, y, z: float): bool {.discardable.} =
-  wgr_emitter3d_set_position(e.Handle, x, y, z)
+  wgr_emitter3d_set_position(e.raw, x, y, z)
 proc setPosition*(e: Emitter2d; value: Vec2): bool {.discardable.} =
   ## a move: the steady spawns spread along the way, and particles inherit its velocity
-  wgr_emitter2d_set_position(e.Handle, value.x, value.y)
+  wgr_emitter2d_set_position(e.raw, value.x, value.y)
 proc setPosition*(e: Emitter2d; x, y: float): bool {.discardable.} =
-  wgr_emitter2d_set_position(e.Handle, x, y)
+  wgr_emitter2d_set_position(e.raw, x, y)
 proc jump*(e: Emitter3d; value: Vec3): bool {.discardable.} =
   ## put it somewhere without a move: nothing spawns along the way
-  wgr_emitter3d_jump(e.Handle, value.x, value.y, value.z)
-proc jump*(e: Emitter3d; x, y, z: float): bool {.discardable.} = wgr_emitter3d_jump(e.Handle, x, y, z)
+  wgr_emitter3d_jump(e.raw, value.x, value.y, value.z)
+proc jump*(e: Emitter3d; x, y, z: float): bool {.discardable.} = wgr_emitter3d_jump(e.raw, x, y, z)
 proc jump*(e: Emitter2d; value: Vec2): bool {.discardable.} =
   ## put it somewhere without a move: nothing spawns along the way
-  wgr_emitter2d_jump(e.Handle, value.x, value.y)
-proc jump*(e: Emitter2d; x, y: float): bool {.discardable.} = wgr_emitter2d_jump(e.Handle, x, y)
-proc getPosition*(e: Emitter3d): Vec3 = wgr_emitter3d_get_position(e.Handle).toNim
-proc getPosition*(e: Emitter2d): Vec2 = wgr_emitter2d_get_position(e.Handle).toNim
+  wgr_emitter2d_jump(e.raw, value.x, value.y)
+proc jump*(e: Emitter2d; x, y: float): bool {.discardable.} = wgr_emitter2d_jump(e.raw, x, y)
+proc getPosition*(e: Emitter3d): Vec3 = wgr_emitter3d_get_position(e.raw).toNim
+proc getPosition*(e: Emitter2d): Vec2 = wgr_emitter2d_get_position(e.raw).toNim
 
 proc setRate*(e: Emitter; perSecond: float): bool {.discardable.} =
   ## the steady rate, particles per second (0: bursts only)
-  (when e is Emitter3d: wgr_emitter3d_set_rate(e.Handle, perSecond.cfloat)
-   else: wgr_emitter2d_set_rate(e.Handle, perSecond.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_rate(e.raw, perSecond.cfloat)
+   else: wgr_emitter2d_set_rate(e.raw, perSecond.cfloat))
 proc burst*(e: Emitter; count: int): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_burst(e.Handle, count.cint)
-   else: wgr_emitter2d_burst(e.Handle, count.cint))
+  (when e is Emitter3d: wgr_emitter3d_burst(e.raw, count.cint)
+   else: wgr_emitter2d_burst(e.raw, count.cint))
 proc setEmitting*(e: Emitter; emitting: bool): bool {.discardable.} =
   ## false stops the steady rate; the particles alive finish their lives
-  (when e is Emitter3d: wgr_emitter3d_set_emitting(e.Handle, emitting)
-   else: wgr_emitter2d_set_emitting(e.Handle, emitting))
+  (when e is Emitter3d: wgr_emitter3d_set_emitting(e.raw, emitting)
+   else: wgr_emitter2d_set_emitting(e.raw, emitting))
 proc isEmitting*(e: Emitter): bool =
-  (when e is Emitter3d: wgr_emitter3d_is_emitting(e.Handle)
-   else: wgr_emitter2d_is_emitting(e.Handle))
+  (when e is Emitter3d: wgr_emitter3d_is_emitting(e.raw)
+   else: wgr_emitter2d_is_emitting(e.raw))
 proc setMax*(e: Emitter; count: int): bool {.discardable.} =
   ## at most this many alive (default 1024); false, and refused, below 1 or above 65536
-  (when e is Emitter3d: wgr_emitter3d_set_max(e.Handle, count.cint)
-   else: wgr_emitter2d_set_max(e.Handle, count.cint))
+  (when e is Emitter3d: wgr_emitter3d_set_max(e.raw, count.cint)
+   else: wgr_emitter2d_set_max(e.raw, count.cint))
 proc setLife*(e: Emitter; minSeconds, maxSeconds: float): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_set_life(e.Handle, minSeconds.cfloat, maxSeconds.cfloat)
-   else: wgr_emitter2d_set_life(e.Handle, minSeconds.cfloat, maxSeconds.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_life(e.raw, minSeconds.cfloat, maxSeconds.cfloat)
+   else: wgr_emitter2d_set_life(e.raw, minSeconds.cfloat, maxSeconds.cfloat))
 proc prewarm*(e: Emitter; seconds: float): bool {.discardable.} =
   ## start over as if the steady rate had run for that long
-  (when e is Emitter3d: wgr_emitter3d_prewarm(e.Handle, seconds.cfloat)
-   else: wgr_emitter2d_prewarm(e.Handle, seconds.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_prewarm(e.raw, seconds.cfloat)
+   else: wgr_emitter2d_prewarm(e.raw, seconds.cfloat))
 
 proc setSpawnBox*(e: Emitter3d; halfExtents: Vec3): bool {.discardable.} =
   ## born anywhere in a box around the position (half sizes; default a point)
-  wgr_emitter3d_set_spawn_box(e.Handle, halfExtents.x, halfExtents.y, halfExtents.z)
+  wgr_emitter3d_set_spawn_box(e.raw, halfExtents.x, halfExtents.y, halfExtents.z)
 proc setSpawnBox*(e: Emitter2d; halfExtents: Vec2): bool {.discardable.} =
   ## born anywhere in a box around the position (half sizes; default a point)
-  wgr_emitter2d_set_spawn_box(e.Handle, halfExtents.x, halfExtents.y)
+  wgr_emitter2d_set_spawn_box(e.raw, halfExtents.x, halfExtents.y)
 proc setSpawnSphere*(e: Emitter3d; radius: float): bool {.discardable.} =
-  wgr_emitter3d_set_spawn_sphere(e.Handle, radius.cfloat)
+  wgr_emitter3d_set_spawn_sphere(e.raw, radius.cfloat)
 proc setSpawnCircle*(e: Emitter2d; radius: float): bool {.discardable.} =
-  wgr_emitter2d_set_spawn_circle(e.Handle, radius.cfloat)
+  wgr_emitter2d_set_spawn_circle(e.raw, radius.cfloat)
 proc setVelocity*(e: Emitter3d; velocity: Vec3; spread = 0.0; speedVariance = 0.0): bool {.discardable.} =
   ## along `velocity` at its length's speed, turned up to `spread` radians off it and
   ## faster or slower by up to `speedVariance` (0..1) of it
-  wgr_emitter3d_set_velocity(e.Handle, velocity.x, velocity.y, velocity.z, spread, speedVariance)
+  wgr_emitter3d_set_velocity(e.raw, velocity.x, velocity.y, velocity.z, spread, speedVariance)
 proc setVelocity*(e: Emitter2d; velocity: Vec2; spread = 0.0; speedVariance = 0.0): bool {.discardable.} =
   ## along `velocity` at its length's speed (pixels per second), turned up to `spread`
   ## radians off it and faster or slower by up to `speedVariance` (0..1) of it
-  wgr_emitter2d_set_velocity(e.Handle, velocity.x, velocity.y, spread, speedVariance)
+  wgr_emitter2d_set_velocity(e.raw, velocity.x, velocity.y, spread, speedVariance)
 proc setGravity*(e: Emitter3d; acceleration: Vec3): bool {.discardable.} =
-  wgr_emitter3d_set_gravity(e.Handle, acceleration.x, acceleration.y, acceleration.z)
+  wgr_emitter3d_set_gravity(e.raw, acceleration.x, acceleration.y, acceleration.z)
 proc setGravity*(e: Emitter2d; acceleration: Vec2): bool {.discardable.} =
-  wgr_emitter2d_set_gravity(e.Handle, acceleration.x, acceleration.y)
+  wgr_emitter2d_set_gravity(e.raw, acceleration.x, acceleration.y)
 proc setDrag*(e: Emitter; perSecond: float): bool {.discardable.} =
   ## slows particles in proportion to their speed (1 loses about 63% a second)
-  (when e is Emitter3d: wgr_emitter3d_set_drag(e.Handle, perSecond.cfloat)
-   else: wgr_emitter2d_set_drag(e.Handle, perSecond.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_drag(e.raw, perSecond.cfloat)
+   else: wgr_emitter2d_set_drag(e.raw, perSecond.cfloat))
 proc setInheritVelocity*(e: Emitter; fraction: float): bool {.discardable.} =
   ## that fraction of the emitter's own movement, added at birth
-  (when e is Emitter3d: wgr_emitter3d_set_inherit_velocity(e.Handle, fraction.cfloat)
-   else: wgr_emitter2d_set_inherit_velocity(e.Handle, fraction.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_inherit_velocity(e.raw, fraction.cfloat)
+   else: wgr_emitter2d_set_inherit_velocity(e.raw, fraction.cfloat))
 
 proc setSize*(e: Emitter; start, finish: float; variance = 0.0): bool {.discardable.} =
   ## from `start` at birth to `finish` at death, each particle's scaled by up to
   ## `variance` (0..1)
-  (when e is Emitter3d: wgr_emitter3d_set_size(e.Handle, start.cfloat, finish.cfloat, variance.cfloat)
-   else: wgr_emitter2d_set_size(e.Handle, start.cfloat, finish.cfloat, variance.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_size(e.raw, start.cfloat, finish.cfloat, variance.cfloat)
+   else: wgr_emitter2d_set_size(e.raw, start.cfloat, finish.cfloat, variance.cfloat))
 proc setColor*(e: Emitter; start, finish: Color): bool {.discardable.} =
   ## from `start` at birth to `finish` at death, alpha included (a fade)
-  (when e is Emitter3d: wgr_emitter3d_set_color(e.Handle, start, finish)
-   else: wgr_emitter2d_set_color(e.Handle, start, finish))
+  (when e is Emitter3d: wgr_emitter3d_set_color(e.raw, start, finish)
+   else: wgr_emitter2d_set_color(e.raw, start, finish))
 proc addSizeKey*(e: Emitter; t, size: float): bool {.discardable.} =
   ## a curve point at `t` (0..1 of a particle's life), up to 8; clearSizeKeys first
-  (when e is Emitter3d: wgr_emitter3d_add_size_key(e.Handle, t.cfloat, size.cfloat)
-   else: wgr_emitter2d_add_size_key(e.Handle, t.cfloat, size.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_add_size_key(e.raw, t.cfloat, size.cfloat)
+   else: wgr_emitter2d_add_size_key(e.raw, t.cfloat, size.cfloat))
 proc clearSizeKeys*(e: Emitter): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_clear_size_keys(e.Handle)
-   else: wgr_emitter2d_clear_size_keys(e.Handle))
+  (when e is Emitter3d: wgr_emitter3d_clear_size_keys(e.raw)
+   else: wgr_emitter2d_clear_size_keys(e.raw))
 proc addColorKey*(e: Emitter; t: float; color: Color): bool {.discardable.} =
   ## a curve point at `t` (0..1 of a particle's life), up to 8; clearColorKeys first
-  (when e is Emitter3d: wgr_emitter3d_add_color_key(e.Handle, t.cfloat, color)
-   else: wgr_emitter2d_add_color_key(e.Handle, t.cfloat, color))
+  (when e is Emitter3d: wgr_emitter3d_add_color_key(e.raw, t.cfloat, color)
+   else: wgr_emitter2d_add_color_key(e.raw, t.cfloat, color))
 proc clearColorKeys*(e: Emitter): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_clear_color_keys(e.Handle)
-   else: wgr_emitter2d_clear_color_keys(e.Handle))
+  (when e is Emitter3d: wgr_emitter3d_clear_color_keys(e.raw)
+   else: wgr_emitter2d_clear_color_keys(e.raw))
 proc addPaletteColor*(e: Emitter; color: Color): bool {.discardable.} =
   ## up to 8; each particle picks one at birth, and it tints the color over its life
-  (when e is Emitter3d: wgr_emitter3d_add_palette_color(e.Handle, color)
-   else: wgr_emitter2d_add_palette_color(e.Handle, color))
+  (when e is Emitter3d: wgr_emitter3d_add_palette_color(e.raw, color)
+   else: wgr_emitter2d_add_palette_color(e.raw, color))
 proc clearPalette*(e: Emitter): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_clear_palette(e.Handle)
-   else: wgr_emitter2d_clear_palette(e.Handle))
+  (when e is Emitter3d: wgr_emitter3d_clear_palette(e.raw)
+   else: wgr_emitter2d_clear_palette(e.raw))
 proc setSpin*(e: Emitter; min, max: float): bool {.discardable.} =
   ## radians per second, between min and max, from a random angle
-  (when e is Emitter3d: wgr_emitter3d_set_spin(e.Handle, min.cfloat, max.cfloat)
-   else: wgr_emitter2d_set_spin(e.Handle, min.cfloat, max.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_spin(e.raw, min.cfloat, max.cfloat)
+   else: wgr_emitter2d_set_spin(e.raw, min.cfloat, max.cfloat))
 proc setStretch*(e: Emitter; seconds: float): bool {.discardable.} =
   ## streaks along the motion, as long as the distance moved in `seconds` (0: off)
-  (when e is Emitter3d: wgr_emitter3d_set_stretch(e.Handle, seconds.cfloat)
-   else: wgr_emitter2d_set_stretch(e.Handle, seconds.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_stretch(e.raw, seconds.cfloat)
+   else: wgr_emitter2d_set_stretch(e.raw, seconds.cfloat))
 proc setAlphaMode*(e: Emitter; mode: AlphaMode; cutoff = 0.0): bool {.discardable.} =
   ## default AlphaMode.Add
-  (when e is Emitter3d: wgr_emitter3d_set_alpha_mode(e.Handle, ord(mode).cint, cutoff.cfloat)
-   else: wgr_emitter2d_set_alpha_mode(e.Handle, ord(mode).cint, cutoff.cfloat))
+  (when e is Emitter3d: wgr_emitter3d_set_alpha_mode(e.raw, ord(mode).cint, cutoff.cfloat)
+   else: wgr_emitter2d_set_alpha_mode(e.raw, ord(mode).cint, cutoff.cfloat))
 proc setSeed*(e: Emitter; seed: uint32): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_set_seed(e.Handle, seed.cuint)
-   else: wgr_emitter2d_set_seed(e.Handle, seed.cuint))
+  (when e is Emitter3d: wgr_emitter3d_set_seed(e.raw, seed.cuint)
+   else: wgr_emitter2d_set_seed(e.raw, seed.cuint))
 
 proc getCount*(e: Emitter): int =
   ## particles alive now
-  (when e is Emitter3d: wgr_emitter3d_get_count(e.Handle)
-   else: wgr_emitter2d_get_count(e.Handle)).int
+  (when e is Emitter3d: wgr_emitter3d_get_count(e.raw)
+   else: wgr_emitter2d_get_count(e.raw)).int
 proc clear*(e: Emitter) =
   ## all of them gone
-  (when e is Emitter3d: wgr_emitter3d_clear(e.Handle)
-   else: wgr_emitter2d_clear(e.Handle))
+  (when e is Emitter3d: wgr_emitter3d_clear(e.raw)
+   else: wgr_emitter2d_clear(e.raw))
 proc setVisible*(e: Emitter; visible: bool): bool {.discardable.} =
-  (when e is Emitter3d: wgr_emitter3d_set_visible(e.Handle, visible)
-   else: wgr_emitter2d_set_visible(e.Handle, visible))
+  (when e is Emitter3d: wgr_emitter3d_set_visible(e.raw, visible)
+   else: wgr_emitter2d_set_visible(e.raw, visible))
 proc draw*(e: Emitter) =
   ## immediate (a 3D one in 3D mode), for one not in a scene
-  (when e is Emitter3d: wgr_emitter3d_draw(e.Handle)
-   else: wgr_emitter2d_draw(e.Handle))
+  (when e is Emitter3d: wgr_emitter3d_draw(e.raw)
+   else: wgr_emitter2d_draw(e.raw))
 
 # --- debug ---
 
@@ -647,8 +659,8 @@ proc getScreenSize*(): Vec2 = wgr_window_get_screen_size().toNim
 proc getMouseState*(): MouseState =
   let m = wgr_input_get_mouse_state()
   MouseState(x: m.x.int, y: m.y.int, wheel: m.wheel.float, wheelX: m.wheel_x.float,
-             left: m.left.int, right: m.right.int, middle: m.middle.int,
-             buttons: [m.buttons[0].int, m.buttons[1].int, m.buttons[2].int],
+             left: ButtonState(m.left), right: ButtonState(m.right), middle: ButtonState(m.middle),
+             buttons: [ButtonState(m.buttons[0]), ButtonState(m.buttons[1]), ButtonState(m.buttons[2])],
              dx: m.dx.int, dy: m.dy.int)
 
 proc getKey*(key: Key): ButtonState = ButtonState(wgr_input_get_key(ord(key).cint))
