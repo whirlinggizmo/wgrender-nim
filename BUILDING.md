@@ -33,7 +33,9 @@ nim clean
 ```
 
 `nim c -r src/simple.nim` builds and runs the desktop version in place. With MSVC:
-`nim c --cc:vcc -r src/simple.nim`.
+`nim build --cc:vcc desktop` (into `out/windows/msvc/`), or `nim c --cc:vcc -r
+src/simple.nim`. On Windows the output and cache directories are named for the compiler:
+`msvc` for `--cc:vcc`, `clang` for `--cc:clang`, `mingw` for Nim's default.
 
 The web build is chosen by the environment, spelled as wgrender's own tools spell it:
 `BACKEND=webgl2|webgpu`, `WEB_THREADS=1|0`, `WEB_DEBUG=0|1` (for example

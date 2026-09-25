@@ -2,7 +2,8 @@
 # source is src/<name>.nim. Every example's config.nims is this same file.
 #
 #   nim build desktop     out/<platform>/<variant>/<name>: out/linux/release/, out/windows/mingw/,
-#                         ... (wgrender compiled in, by src/wgr/build.nim)
+#                         ... (wgrender compiled in, by src/wgr/build.nim); with MSVC,
+#                         nim build --cc:vcc desktop: out/windows/msvc/
 #   nim build web         out/web/<variant>/ (out/web/webgl2 by default): <name>.js/.wasm +
 #                         wgrender's page shell
 #   nim build all         both
@@ -43,9 +44,23 @@ let wgrenderDir = absolutePath(
   elif fileExists(wgrenderSibling / "include/wgr.h"): wgrenderSibling
   else: wgrenderSubmodule)
 
+proc ccFromCmdLine(): string =
+  ## The C compiler the command line names (--cc:vcc), or "" for Nim's default. Read
+  ## from the arguments because Nim applies --cc after this file runs, so
+  ## defined(vcc) is still false here.
+  for i in 1..paramCount():
+    let p = paramStr(i)
+    for prefix in ["--cc:", "--cc="]:
+      if p.startsWith(prefix): result = p[prefix.len..^1]
+
 proc desktopVariant(): string =
-  ## <platform>/<variant>: release, or on Windows the toolchain (Nim's default, MinGW)
-  when defined(windows): "windows/mingw"
+  ## <platform>/<variant>: release, or on Windows the toolchain: msvc (--cc:vcc),
+  ## clang (--cc:clang), else mingw (Nim's default there)
+  when defined(windows):
+    case ccFromCmdLine()
+    of "vcc": "windows/msvc"
+    of "clang": "windows/clang"
+    else: "windows/mingw"
   elif defined(macosx): "macos/release"
   else: "linux/release"
 
@@ -93,7 +108,10 @@ proc webOut(): string = outDir / webVariant()
 
 proc buildDesktop() =
   echo name & " (desktop) -> " & relativePath(desktopOut(), thisDir) & "/" & name
-  exec "nim c --out:" & quoteShell(desktopOut() / name) & " " & mainEntry.quoteShell
+  # the compiler the command line chose, passed on (nim build --cc:vcc desktop)
+  let cc = ccFromCmdLine()
+  exec "nim c " & (if cc.len > 0: "--cc:" & cc & " " else: "") & "--out:" &
+       quoteShell(desktopOut() / name) & " " & mainEntry.quoteShell
 
 proc buildWeb() =
   let site = webOut()
