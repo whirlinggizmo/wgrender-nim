@@ -22,7 +22,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  WomanCasualPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
   SpherePath = "models/sphere/sphere.glb"
   FontPath = "fonts/Komika/KOMIKAH_.ttf"
 
@@ -40,7 +40,7 @@ type App = object
   bg, labelBg, minimapBg, frameColor: Color
   pixelView, minimap, label: Texture # render target textures
   font: Font
-  womanCasual, globe, ground: Model
+  character, globe, ground: Model
   time: float
 
 var g: App
@@ -90,9 +90,9 @@ proc onInit() =
   material.setFloat("metallic", 0.0)
   g.ground = createModel(0, -0.05, 0, 0.1, 8.0, material)
 
-  g.womanCasual = newModel()
-  g.womanCasual.setAnimation(3)
-  g.scene.add(g.womanCasual)
+  g.character = newModel()
+  g.character.setAnimation(3)
+  g.scene.add(g.character)
 
   # the globe wears the label texture: drawn into each frame, used like any texture
   material = newMaterial(MaterialShading.Unlit)
@@ -100,9 +100,9 @@ proc onInit() =
   material.setVec2("base_color_texture_scale", (2.0, 1.0)) # twice around
   g.globe = createModel(2.2, 1.2, 0, 1.6, 1.6, material)
 
-  load(WomanCasualPath) do (path: string):
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
-    g.womanCasual.setMesh(mesh)
+    g.character.setMesh(mesh)
     mesh.release()
   load(SpherePath) do (path: string):
     let mesh = newMesh(path)
@@ -125,8 +125,8 @@ proc frame(dt, tickFraction: float) =
   when not defined(emscripten): # a web page has nothing to quit to
     if isKeyPressed(Key.Escape): requestQuit()
   g.time += dt
-  g.womanCasual.setTransform((gx, 0.0, gz), (0.0, -g.time * 0.6, 0.0), (0.6, 0.6, 0.6)) # walks in a circle
-  g.womanCasual.animate(dt)
+  g.character.setTransform((gx, 0.0, gz), (0.0, -g.time * 0.6, 0.0), (0.6, 0.6, 0.6)) # walks in a circle
+  g.character.animate(dt)
   g.globe.setTransform((-2.2, 1.2, 0.0), (0.0, g.time * 0.8, 0.0), (1.6, 1.6, 1.6))
 
   beginFrame()

@@ -29,7 +29,7 @@ const
 
   LogoPath = "sprites/logo/wg-logo-bw-alpha.png"
   WhiteLogoPath = "sprites/logo/wg-logo-white-alpha.png"
-  ModelPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
 
   SpriteCount = 5
   TintSprite = 4
@@ -103,7 +103,7 @@ proc onInit() =
     let texture = newTexture(path)
     g.sprites[TintSprite].setTexture(texture)
     texture.release() # the sprite holds its own reference
-  load(ModelPath) do (path: string):
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
     g.model.setMesh(mesh)
     mesh.release()

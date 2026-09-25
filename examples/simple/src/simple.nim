@@ -19,7 +19,7 @@ const
 
   DebugFontPath = "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf"
   KomikaFontPath = "fonts/Komika/KOMIKAH_.ttf"
-  ModelPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
   SpritePath = "sprites/logo/wg-logo-bw-alpha.png"
   BgmPath = "music/ethernight_club.mp3"
 
@@ -65,7 +65,7 @@ proc loadAssets() =
     g.bgm.setLoop(true)
     g.bgm.play()
 
-  load(ModelPath) do (path: string):
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
     g.model = newModel(mesh)
     mesh.release() # the model holds its own reference

@@ -44,7 +44,7 @@ type App = object
   scene: Scene
   camera: Camera3d
   background, bar, graphOk, graphSlow, line, cube: Color
-  womanCasual, sphere: Model
+  character, sphere: Model
   material: Material
   group: AssetTask
   sync: bool                     # the load in progress creates everything in its group callback
@@ -64,7 +64,7 @@ var g: App
 proc releaseAll() =
   g.scene.setEnvironment(default(Environment), 1.0, 0.0)
   g.scene.setBackground(default(Environment), 0.0)
-  g.womanCasual.setMesh(default(Mesh))
+  g.character.setMesh(default(Mesh))
   g.sphere.setMesh(default(Mesh))
   g.material.setTexture("normal_texture", default(Texture))
   for environment in g.environments.mitems:
@@ -89,7 +89,7 @@ proc createAll() =
 
   g.scene.setEnvironment(g.environments[0], 1.0, 0.0)
   g.scene.setBackground(g.environments[0], 0.3)
-  g.womanCasual.setMesh(g.meshes[0])
+  g.character.setMesh(g.meshes[0])
   g.sphere.setMesh(g.meshes[1])
   g.material.setTexture("normal_texture", g.textures[0])
   g.loaded = true
@@ -136,10 +136,10 @@ proc onInit() =
   g.scene = newScene()
   g.scene.setActiveCamera(g.camera)
 
-  g.womanCasual = newModel()
-  g.womanCasual.setTransform((-1.2, 0.0, 0.0), (0.0, 0.4, 0.0), (0.5, 0.5, 0.5))
-  g.womanCasual.setAnimation(3)
-  g.scene.add(g.womanCasual)
+  g.character = newModel()
+  g.character.setTransform((-1.2, 0.0, 0.0), (0.0, 0.4, 0.0), (0.5, 0.5, 0.5))
+  g.character.setAnimation(3)
+  g.scene.add(g.character)
 
   g.sphere = newModel()
   g.sphere.setTransform((1.2, 0.8, 0.0), (0.0, 0.0, 0.0), (0.8, 0.8, 0.8))
@@ -188,7 +188,7 @@ proc frame(dt, tickFraction: float) =
   if keys.isPressed(Key.U) and g.group.isNone: releaseAll()
 
   g.time += dt
-  g.womanCasual.animate(dt)
+  g.character.animate(dt)
 
   beginFrame()
   clearBackground(g.background)

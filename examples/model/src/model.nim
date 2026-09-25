@@ -17,7 +17,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  ModelPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
 
 type App = object
   scene: Scene
@@ -63,7 +63,7 @@ proc onInit() =
   g.scene.setAmbient(ColorWhite, 0.3)
   enableFps(12, 10, 16)
 
-  g.model = newModelFor(ModelPath)
+  g.model = newModelFor(CharacterPath)
   g.scene.add(g.model)
 
 proc frame(dt, tickFraction: float) =
@@ -89,7 +89,7 @@ proc frame(dt, tickFraction: float) =
   g.scene.draw()
 
   drawText("wgrender model (Nim): glTF/cgltf", 12, 36, 22, ColorRaywhite)
-  drawText((if not g.model.isNone: "woman_casual.glb — skeletal animation (glTF skin)"
+  drawText((if not g.model.isNone: CharacterPath & " — skeletal animation (glTF skin)"
             else: "loading model..."), 12, 68, 16, ColorLightgray)
 
   endFrame()

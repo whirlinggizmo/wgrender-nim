@@ -4,7 +4,7 @@
 ##   - top row: dielectric (metallic 0) spheres, roughness 0 to 1 left to right
 ##   - middle row: metal (metallic 1) spheres, same roughness steps
 ##   - bottom row: unlit, emissive, normal mapped (tangents generated at load), alpha
-##     blended, and the animated woman with its body material replaced by gold on
+##     blended, and the animated character with its body material replaced by gold on
 ##     this model only
 ## One sphere mesh backs every sphere; each model overrides the mesh's material. The
 ## materials are assigned before the mesh finishes loading. A sun, an orbiting point
@@ -23,19 +23,19 @@ const
     when defined(emscripten): "assets" else: "examples/assets"
 
   SpherePath = "models/sphere/sphere.glb"
-  WomanCasualPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
   NormalMapPath = "textures/tiles_normal.png"
 
   Columns = 5
   Spacing = 1.35
-  WomanCasualBodySlot = 1 # slot 0, the blob shadow, is kept
+  CharacterBodySlot = 1 # slot 0, the blob shadow, is kept
 
 type App = object
   scene: Scene
   camera: Camera3d
   background: Color
   spheres: seq[Model]
-  womanCasual: Model
+  character: Model
   tiles: Material # normal mapped; gets its texture when it loads
   sun, lamp: Light
   lampMarker: Shape3d
@@ -113,21 +113,21 @@ proc onInit() =
   material.setAlphaMode(AlphaMode.Blend)
   addSphere(Spacing, 0.0, material)
 
-  g.womanCasual = newModel()
-  g.womanCasual.setTransform((2 * Spacing, -0.55, 0.0), (0.0, -0.6, 0.0), (0.3, 0.3, 0.3))
-  g.womanCasual.setAnimation(3)
+  g.character = newModel()
+  g.character.setTransform((2 * Spacing, -0.55, 0.0), (0.0, -0.6, 0.0), (0.3, 0.3, 0.3))
+  g.character.setAnimation(3)
   material = newPbr((1.0, 0.77, 0.34), 1.0, 0.3)
-  g.womanCasual.setMaterial(WomanCasualBodySlot, material)
+  g.character.setMaterial(CharacterBodySlot, material)
   material.release()
-  g.scene.add(g.womanCasual)
+  g.scene.add(g.character)
 
   load(SpherePath) do (path: string):
     let mesh = newMesh(path)
     for sphere in g.spheres: sphere.setMesh(mesh)
     mesh.release() # the models hold their own references
-  load(WomanCasualPath) do (path: string):
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
-    g.womanCasual.setMesh(mesh)
+    g.character.setMesh(mesh)
     mesh.release()
   load(NormalMapPath) do (path: string):
     let texture = newTexture(path)
@@ -151,7 +151,7 @@ proc frame(dt, tickFraction: float) =
   for i in 2 * Columns ..< g.spheres.len: # turn the bottom row so the normal map moves
     let x = ((i - 2 * Columns).float - 2) * Spacing
     g.spheres[i].setTransform((x, 0.0, 0.0), (0.0, g.time * 0.5, 0.0), (1.0, 1.0, 1.0))
-  g.womanCasual.animate(dt)
+  g.character.animate(dt)
 
   beginFrame()
   clearBackground(g.background)

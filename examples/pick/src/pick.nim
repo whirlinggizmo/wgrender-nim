@@ -21,7 +21,7 @@ const
     when defined(emscripten): "assets" else: "examples/assets"
 
   LogoPath = "sprites/logo/wg-logo-bw-alpha.png"
-  ModelPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
 
 type App = object
   scene: Scene
@@ -88,7 +88,7 @@ proc onInit() =
     g.sprite.setTransform((0.0, 3.0, 4.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
     g.sprite.setPickAlphaTest(true, 0.5)
     g.scene.add(g.sprite, 1)
-  load(ModelPath) do (path: string):
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
     g.model = newModel(mesh)
     mesh.release() # the model holds its own reference to the mesh

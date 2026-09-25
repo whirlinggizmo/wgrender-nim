@@ -3,7 +3,7 @@
 ## A casting light and what it does to a scene. The sun casts (setCastsShadows): once
 ## a frame it draws everything that casts into a depth map, and the lit shading darkens
 ## what's behind something. The scene is a floor, a wall, some generated shapes and an
-## animated woman, so the shadows fall across each other and across themselves.
+## animated character, so the shadows fall across each other and across themselves.
 ##
 ##   - 1 turns the sun's casting on and off, the difference this whole feature makes
 ##   - 2 does the same for a spot light circling the scene, which casts through its own
@@ -33,7 +33,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  WomanCasualPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
 
   MapSizes = [512, 1024, 2048, 4096]
 
@@ -46,7 +46,7 @@ type App = object
   camera: Camera3d
   sun, spot: Light
   spotMarker: Shape3d
-  womanCasual: Model
+  character: Model
   noCast, noReceive: Model
   shadows, spotShadows, orbit: bool
   distance, bias, strength: float
@@ -122,15 +122,15 @@ proc onInit() =
   g.noReceive = place(newMeshSphere(0.6, 24, 48), -2.6, 0.6, -1.2, 0.9, 0.3, 0.5, 0.35)
   g.noReceive.setReceivesShadow(false)
 
-  g.womanCasual = newModel()
-  g.womanCasual.setTransform((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
-  g.scene.add(g.womanCasual)
-  load(WomanCasualPath) do (path: string):
+  g.character = newModel()
+  g.character.setTransform((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
+  g.scene.add(g.character)
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
-    g.womanCasual.setMesh(mesh)
+    g.character.setMesh(mesh)
     mesh.release()
-    g.womanCasual.setAnimation(3)
-    g.womanCasual.setAnimationLoop(true)
+    g.character.setAnimation(3)
+    g.character.setAnimationLoop(true)
   enableFps(12, 10, 16)
 
 proc onOff(on: bool): string = (if on: "on" else: "off")
@@ -165,7 +165,7 @@ proc frame(dt, tickFraction: float) =
     g.sun.setShadowBias(g.bias, g.bias * 4.0)
 
   g.time += dt
-  g.womanCasual.animate(dt)
+  g.character.animate(dt)
   # the spot circles overhead, always aimed at the middle of the scene
   let sx = 7.0 * sin(g.time * 0.35)
   let sz = 7.0 * cos(g.time * 0.35)

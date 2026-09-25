@@ -22,7 +22,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  ModelPath = "models/woman_casual/woman_casual.glb"
+  CharacterPath = "models/woman_casual/woman_casual.glb"
   SpritePath = "textures/tiles.png"
   NormalPath = "textures/tiles_sheet_normal.png" # wgrender's tools/gen_tiles.py
 
@@ -114,7 +114,7 @@ proc onInit() =
     g.scene.add(sprite)
   g.spriteMaterial.release() # the sprites hold it
 
-  load(ModelPath) do (path: string):
+  load(CharacterPath) do (path: string):
     let mesh = newMesh(path)
     for model in g.models: model.setMesh(mesh)
     mesh.release() # the models hold their own references
