@@ -1,7 +1,7 @@
 ## wgrender postprocess example, in Nim: a port of wgrender's examples/postprocess.c.
 ##
 ## Post-processing: screen effects over the finished frame. The frame is an ordinary
-## lit scene (an animated gumshoe on a floor, generated shapes, a circling point
+## lit scene (an animated woman on a floor, generated shapes, a circling point
 ## light). The effects are custom materials whose shaders are screen effects
 ## (wgrender's examples/shaders/vignette.glsl and scanlines.glsl, compiled by its
 ## tools/shaderpack.py; tools/gen_shaders.py --examples):
@@ -29,7 +29,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  GumshoePath = "models/gumshoe/gumshoe.glb"
+  WomanCasualPath = "models/woman_casual/woman_casual.glb"
   VignettePath = "shaders/vignette.wgrshader"
   ScanlinesPath = "shaders/scanlines.wgrshader"
 
@@ -38,7 +38,7 @@ const
 type App = object
   scene: Scene
   camera: Camera3d
-  gumshoe: Model
+  womanCasual: Model
   lamp: Light
   lampMarker: Shape3d
   shapes: array[ShapeCount, Model]
@@ -62,7 +62,7 @@ proc load(path: string; onReady: proc (path: string)) =
     onFailed(path)
 
 proc onInit() =
-  # the shapes beside the gumshoe, and their colors
+  # the shapes beside the woman, and their colors
   let shapes = [
     (mesh: newMeshSphere(0.5, 24, 48), x: -2.2, y: 0.5, r: 0.2, gr: 0.55, b: 0.9),
     (mesh: newMeshTorus(0.45, 0.16, 48, 24), x: 2.2, y: 0.7, r: 0.95, gr: 0.6, b: 0.25),
@@ -112,16 +112,16 @@ proc onInit() =
     material.release()
     g.scene.add(g.shapes[i])
 
-  g.gumshoe = newModel()
-  g.gumshoe.setTransform((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
-  g.scene.add(g.gumshoe)
+  g.womanCasual = newModel()
+  g.womanCasual.setTransform((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
+  g.scene.add(g.womanCasual)
 
-  load(GumshoePath) do (path: string):
+  load(WomanCasualPath) do (path: string):
     let mesh = newMesh(path)
-    g.gumshoe.setMesh(mesh)
+    g.womanCasual.setMesh(mesh)
     mesh.release() # the model holds its own reference
-    g.gumshoe.setAnimation(3)
-    g.gumshoe.setAnimationLoop(true)
+    g.womanCasual.setAnimation(3)
+    g.womanCasual.setAnimationLoop(true)
   load(VignettePath) do (path: string):
     let shader = newShader(path)
     g.vignette = newMaterial(shader)
@@ -158,7 +158,7 @@ proc frame(dt, tickFraction: float) =
   if getKey(Key.Down) != ButtonState.Up: g.strength = max(g.strength - dt, 0.0)
 
   g.time += dt
-  g.gumshoe.animate(dt)
+  g.womanCasual.animate(dt)
   if g.orbit: g.angle += dt * 0.25
   g.camera.setView(position = (9.0 * sin(g.angle), 3.2, 9.0 * cos(g.angle)),
                    target = (0.0, 1.0, 0.0))

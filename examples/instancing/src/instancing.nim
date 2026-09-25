@@ -3,7 +3,7 @@
 ## Many models that share a mesh and a material. Nothing here asks for instancing: it
 ## is what wgrender does when models agree on everything but where they stand
 ## (docs/PLAN-instancing.md). A field of cubes shares one mesh and one material and
-## differs only in transform and tint, so it is one draw; six gumshoes share the same
+## differs only in transform and tint, so it is one draw; six women share the same
 ## asset and animate out of step, so their joints are per instance; a few cubes are
 ## see-through, and those keep their back-to-front order. The sun casts, so the same
 ## batching happens again into its shadow map: 400 cubes and six walkers go into it as
@@ -22,7 +22,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  ModelPath = "models/gumshoe/gumshoe.glb"
+  ModelPath = "models/woman_casual/woman_casual.glb"
   FieldSide = 20
   FieldCount = FieldSide * FieldSide
   Walkers = 6

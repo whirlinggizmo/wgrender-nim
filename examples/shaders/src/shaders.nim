@@ -2,7 +2,7 @@
 ##
 ## Materials drawn by shaders of your own.
 ##   - left: toon shading (lights in flat bands, a rim light) on the animated
-##     gumshoe: custom shaders work on skinned models too
+##     woman: custom shaders work on skinned models too
 ##   - middle: a sphere dissolving and coming back through a noise texture, with a
 ##     glowing edge (time, a texture, discard)
 ##   - right: a sphere of water rippling in waves (a vertex hook moves the surface)
@@ -27,13 +27,13 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  GumshoePath = "models/gumshoe/gumshoe.glb"
+  WomanCasualPath = "models/woman_casual/woman_casual.glb"
   NoisePath = "textures/noise.png"
   LogoPath = "sprites/logo/wg-logo-white-alpha.png"
   EnvironmentPath = "environments/venice_sunset_1k.hdr"
   FloorY = -0.3
   SphereY = FloorY + 0.5 # spheres 1 m across, resting on the floor
-  GumshoeBodySlot = 1
+  WomanCasualBodySlot = 1
 
 type ShaderKind = enum
   Toon, Dissolve, Wave, SpriteFx
@@ -49,7 +49,7 @@ type App = object
   scene: Scene
   camera: Camera3d
   bg: Color
-  gumshoe, dissolving, rippling: Model
+  womanCasual, dissolving, rippling: Model
   floor: Model
   dissolve: Material # its material gets the noise texture
   sun, lamp: Light
@@ -78,7 +78,7 @@ proc loadShader(which: ShaderKind) =
       material.setColor("color", rgba(255, 196, 120, 255))
       material.setFloat("bands", 3.0)
       material.setFloat("rim", 0.35)
-      g.gumshoe.setMaterial(GumshoeBodySlot, material)
+      g.womanCasual.setMaterial(WomanCasualBodySlot, material)
     of Dissolve:
       material.setVec4("color", (0.55, 0.6, 0.7, 1.0)) # linear
       material.setVec3("edge_color", (4.0, 1.2, 0.2))
@@ -149,10 +149,10 @@ proc onInit() =
   ground.release() # the model holds its own reference
   g.scene.add(g.floor)
 
-  g.gumshoe = newModel() # meshes attach when they load
-  g.gumshoe.setTransform((-1.9, FloorY, 0.0), (0.0, 0.4, 0.0), (0.5, 0.5, 0.5)) # feet at its origin
-  g.gumshoe.setAnimation(3)
-  g.scene.add(g.gumshoe)
+  g.womanCasual = newModel() # meshes attach when they load
+  g.womanCasual.setTransform((-1.9, FloorY, 0.0), (0.0, 0.4, 0.0), (0.5, 0.5, 0.5)) # feet at its origin
+  g.womanCasual.setAnimation(3)
+  g.scene.add(g.womanCasual)
   g.dissolving = newModel(sphere)
   g.dissolving.setTransform((0.0, SphereY, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
   g.scene.add(g.dissolving)
@@ -184,9 +184,9 @@ proc onInit() =
     let environment = newEnvironment(path)
     g.scene.setEnvironment(environment, 1.0, 0.0) # lighting only: the background stays dark
     environment.release() # the scene holds its own reference
-  load(GumshoePath) do (path: string):
+  load(WomanCasualPath) do (path: string):
     let mesh = newMesh(path)
-    g.gumshoe.setMesh(mesh)
+    g.womanCasual.setMesh(mesh)
     mesh.release()
 
 proc frame(dt, tickFraction: float) =
@@ -203,7 +203,7 @@ proc frame(dt, tickFraction: float) =
   g.lampMarker.setTransform(lamp, (0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
   g.lampMarker.setVisible(g.lamp.isEnabled)
   g.dissolving.setTransform((0.0, SphereY, 0.0), (0.0, g.time * 0.4, 0.0), (1.0, 1.0, 1.0))
-  g.gumshoe.animate(dt)
+  g.womanCasual.animate(dt)
 
   beginFrame()
   clearBackground(g.bg)

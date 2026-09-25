@@ -2,7 +2,7 @@
 ##
 ## Image-based lighting, background and tone mapping. The material spheres (red
 ## plastic and gold, roughness 0 to 1 left to right), a normal-mapped sphere and the
-## gumshoe, lit only by an environment map: no lights, no ambient. Metals reflect the
+## woman, lit only by an environment map: no lights, no ambient. Metals reflect the
 ## environment; rough surfaces blur it.
 ##
 ## Keys:
@@ -26,7 +26,7 @@ const
     when defined(emscripten): "assets" else: "examples/assets"
 
   SpherePath = "models/sphere/sphere.glb"
-  GumshoePath = "models/gumshoe/gumshoe.glb"
+  WomanCasualPath = "models/woman_casual/woman_casual.glb"
   NormalMapPath = "textures/tiles_normal.png"
 
   Columns = 5
@@ -45,7 +45,7 @@ type App = object
   bg, bar: Color
   environments: array[EnvironmentCount, Environment]
   spheres: array[2 * Columns + 1, Model]
-  gumshoe: Model
+  womanCasual: Model
   tiles: Material
   environment: int # index, EnvironmentCount = none
   blur: int        # index into Blurs, 3 = no background
@@ -110,10 +110,10 @@ proc onInit() =
   g.spheres[n] = createSphere(-1.3, -0.7, 0.9, 0.9, 0.9, 0.0, 0.3)
   g.tiles = g.spheres[n].getMaterial(0) # borrowed: the model's own material
 
-  g.gumshoe = newModel()
-  g.gumshoe.setTransform((1.3, -1.3, 0.0), (0.0, 0.4, 0.0), (0.3, 0.3, 0.3))
-  g.gumshoe.setAnimation(3)
-  g.scene.add(g.gumshoe)
+  g.womanCasual = newModel()
+  g.womanCasual.setTransform((1.3, -1.3, 0.0), (0.0, 0.4, 0.0), (0.3, 0.3, 0.3))
+  g.womanCasual.setAnimation(3)
+  g.scene.add(g.womanCasual)
 
   applyEnvironment()
   for i in 0 ..< EnvironmentCount: loadEnvironment(i)
@@ -121,9 +121,9 @@ proc onInit() =
     let mesh = newMesh(path)
     for sphere in g.spheres: sphere.setMesh(mesh)
     mesh.release()
-  load(GumshoePath) do (path: string):
+  load(WomanCasualPath) do (path: string):
     let mesh = newMesh(path)
-    g.gumshoe.setMesh(mesh)
+    g.womanCasual.setMesh(mesh)
     mesh.release()
   load(NormalMapPath) do (path: string):
     let texture = newTexture(path)
@@ -165,7 +165,7 @@ proc frame(dt, tickFraction: float) =
   g.time += dt
   g.camera.setView(position = (sin(g.time * 0.15) * 7.5, 1.2, cos(g.time * 0.15) * 7.5),
                    target = (0.0, 0.3, 0.0))
-  g.gumshoe.animate(dt)
+  g.womanCasual.animate(dt)
 
   let background = if g.blur < 3: (if g.blur == 0: "sharp" elif g.blur == 1: "soft" else: "blurred")
                    else: "off"

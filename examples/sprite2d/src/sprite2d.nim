@@ -29,7 +29,7 @@ const
 
   LogoPath = "sprites/logo/wg-logo-bw-alpha.png"
   WhiteLogoPath = "sprites/logo/wg-logo-white-alpha.png"
-  ModelPath = "models/gumshoe/gumshoe.glb"
+  ModelPath = "models/woman_casual/woman_casual.glb"
 
   SpriteCount = 5
   TintSprite = 4

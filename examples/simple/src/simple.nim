@@ -19,7 +19,7 @@ const
 
   DebugFontPath = "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf"
   KomikaFontPath = "fonts/Komika/KOMIKAH_.ttf"
-  ModelPath = "models/gumshoe/gumshoe.glb"
+  ModelPath = "models/woman_casual/woman_casual.glb"
   SpritePath = "sprites/logo/wg-logo-bw-alpha.png"
   BgmPath = "music/ethernight_club.mp3"
 

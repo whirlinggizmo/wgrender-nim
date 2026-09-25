@@ -21,7 +21,7 @@ const
     when defined(emscripten): "assets" else: "examples/assets"
 
   LogoPath = "sprites/logo/wg-logo-bw-alpha.png"
-  ModelPath = "models/gumshoe/gumshoe.glb"
+  ModelPath = "models/woman_casual/woman_casual.glb"
 
 type App = object
   scene: Scene

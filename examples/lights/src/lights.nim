@@ -22,7 +22,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  ModelPath = "models/gumshoe/gumshoe.glb"
+  ModelPath = "models/woman_casual/woman_casual.glb"
   SpritePath = "textures/tiles.png"
   NormalPath = "textures/tiles_sheet_normal.png" # wgrender's tools/gen_tiles.py
 

@@ -13,7 +13,7 @@
 ##   - the note under the bar is wrapped text (setMaxWidth)
 ##   - the list at the bottom is clipped to the panel (scene.setClip): the mouse wheel
 ##     scrolls it, and rows scrolled out of the box can't be hovered or clicked
-##   - the gumshoe (a 3D member) lights up on hover; clicking it starts or stops its
+##   - the woman (a 3D member) lights up on hover; clicking it starts or stops its
 ##     animation
 ##   - dragging anywhere else orbits the camera; a drag that starts on a button doesn't
 ##     (isPointerCaptured)
@@ -34,7 +34,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  GumshoePath = "models/gumshoe/gumshoe.glb"
+  WomanCasualPath = "models/woman_casual/woman_casual.glb"
   PanelPath = "textures/ui_panel.png"
 
   Buttons = 3
@@ -59,7 +59,7 @@ const
   RowHeight = 34.0
 
   Labels: array[Buttons, string] = ["Count", "Enable / Disable", "Count too"]
-  RowNames: array[Rows, string] = ["Sponza", "Flight helmet", "Gumshoe", "Damaged helmet",
+  RowNames: array[Rows, string] = ["Sponza", "Flight helmet", "Woman", "Damaged helmet",
                                    "Water bottle", "Lantern", "Sphere grid", "Boom box"]
 
 type App = object
@@ -74,7 +74,7 @@ type App = object
   buttons: array[Buttons, Button]
   bar: Bar
   list: List
-  gumshoe: Model
+  womanCasual: Model
   panelTexture: Texture
   clicks: int
   animating: bool
@@ -109,9 +109,9 @@ proc onInit() =
   g.sun.setDirection((-0.4, -1.0, -0.6))
   g.scene.add(g.sun)
 
-  g.gumshoe = newModel()
-  g.gumshoe.setAnimation(3)
-  g.scene.add(g.gumshoe)
+  g.womanCasual = newModel()
+  g.womanCasual.setAnimation(3)
+  g.scene.add(g.womanCasual)
 
   # the panel: one 48x48 texture with 16 px borders, stretched to any size
   g.panel = newSprite2d()
@@ -146,9 +146,9 @@ proc onInit() =
   # the list clips its rows and their labels to its box (LayerRow, LayerRow + 1)
   g.list = newList(g.scene, LayerRow, RowNames, ListX, ListY, ListWidth, ListHeight, RowHeight, 15)
 
-  load(GumshoePath) do (path: string):
+  load(WomanCasualPath) do (path: string):
     let mesh = newMesh(path)
-    g.gumshoe.setMesh(mesh)
+    g.womanCasual.setMesh(mesh)
     mesh.release()
   load(PanelPath) do (path: string):
     g.panelTexture = newTexture(path) # kept: the header draws it too
@@ -176,12 +176,12 @@ proc frame(dt, tickFraction: float) =
   let selected = g.list.update(g.scene, g.theme, mouse.wheel)
 
   # the 3D model
-  g.gumshoe.setTint(if g.scene.getHover(g.gumshoe) in {ButtonState.Pressed, ButtonState.Down}:
+  g.womanCasual.setTint(if g.scene.getHover(g.womanCasual) in {ButtonState.Pressed, ButtonState.Down}:
                       g.highlight else: ColorWhite)
-  if g.scene.isClicked(g.gumshoe):
+  if g.scene.isClicked(g.womanCasual):
     g.animating = not g.animating
   if g.animating:
-    g.gumshoe.animate(dt)
+    g.womanCasual.animate(dt)
 
   # orbit, unless the press started on UI
   if mouse.buttons[0] == ButtonState.Down and not isPointerCaptured():
@@ -201,7 +201,7 @@ proc frame(dt, tickFraction: float) =
   let selectedName = if selected < 0: "nothing" else: RowNames[selected]
   let hoveredName =
     if hovered.isNone: "nothing"
-    elif hovered == g.gumshoe: "gumshoe"
+    elif hovered == g.womanCasual: "the woman"
     elif hovered == g.panel: "the panel"
     else: "UI"
   let captured = if isPointerCaptured(): "yes" else: "no"
