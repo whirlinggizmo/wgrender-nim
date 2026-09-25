@@ -1,0 +1,63 @@
+# Publish the Nim examples to GitHub Pages: https://whirlinggizmo.github.io/wgrender-nim/
+#
+# Every example built for the web and gathered on one page with wgrender's assets
+# (tools/site.py), as wgrender's own examples are at
+# https://whirlinggizmo.github.io/wgrender-c/.
+#
+# WEB_THREADS=0 (tools/site.py sets it), because Pages sends no COOP/COEP headers and a
+# threaded build needs cross-origin isolation; WebGL2, which runs everywhere.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "bench/**", "**/*.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; let a running one finish rather than publishing a half-site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build the site
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/cache@v6
+        with:
+          path: emsdk-cache
+          key: emsdk-5.0.7-${{ runner.os }}
+      - uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 5.0.7
+          actions-cache-folder: emsdk-cache
+      - uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: "2.2.12"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build every example for the web and assemble the site
+        run: python3 tools/site.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/web/webgl2-nothreads
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

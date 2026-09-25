@@ -16,10 +16,12 @@ import wgr
 
 const
   # Where assets load from. Desktop: config.nims points this at wgrender's
-  # examples/assets. Web: the served origin (wgrender's tools/serve.py mounts
-  # examples/assets at /assets).
+  # examples/assets. Web: "assets" beside the page, fetched on a cache miss then stored
+  # in idbfs; relative, not "/assets", so the site works wherever it is hosted: at a
+  # domain root (wgrender's tools/serve.py mounts examples/assets at /assets) and
+  # equally under a path, as GitHub Pages serves this project at /wgrender-nim/.
   AssetBase {.strdefine: "wgrAssetBase".} =
-    when defined(emscripten): "/assets" else: "examples/assets"
+    when defined(emscripten): "assets" else: "examples/assets"
 
   ParticlePath = "textures/particle.png"
   FlamePath = "textures/flame.png" # a 4x4 flipbook (wgrender's tools/gen_particles.py)

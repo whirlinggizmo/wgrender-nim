@@ -1,8 +1,12 @@
 # wgrender-nim
 
-[wgrender](https://github.com/whirlinggizmo/wgrender-c) for Nim: as much of the API as
-the `simple` example needs, which makes it wgrender's Nim entry in the
-cross-binding benchmarks. It is not a complete binding yet.
+[wgrender](https://github.com/whirlinggizmo/wgrender-c) for Nim: the whole C API in
+`wgr/raw`, generated from wgrender's headers, and a Nim layer over it (`wgr`) that
+wraps what the examples use, in Nim's own types; wgrender's Nim entry in the
+cross-binding benchmarks.
+
+**The examples run in a browser: https://whirlinggizmo.github.io/wgrender-nim/**,
+published from `main` by `.github/workflows/pages.yml` (`tools/site.py` builds the site).
 
 ```
 wgrender.nimble          the package: srcDir src, `import wgr`

@@ -43,6 +43,12 @@ The web build is chosen by the environment, spelled as wgrender's own tools spel
 `BACKEND=webgpu nim build web`). A threaded build needs a page with COOP/COEP headers,
 which `nim serve` sends; `WEB_THREADS=0` runs on any static host.
 
+`python3 tools/site.py` builds every example that way (WebGL2, `WEB_THREADS=0`) and
+gathers them on one page with wgrender's page shell and its assets, into
+`out/web/webgl2-nothreads/`: what `.github/workflows/pages.yml` publishes to
+https://whirlinggizmo.github.io/wgrender-nim/. The examples load their assets from
+`assets` beside the page, so the site works at a domain root or under a path.
+
 Nim rebuilds a C file when it changes, but not when a header it includes does, so after
 editing a wgrender header, build with `-f`.
 
