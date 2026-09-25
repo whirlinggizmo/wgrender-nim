@@ -24,7 +24,7 @@ than it would be linking a prebuilt `libwgrender.a`.
 
 ```sh
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
-cd wgrender-nim/examples/simple     # or examples/stress
+cd wgrender-nim/examples/simple     # or examples/stress, examples/particles
 nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
 nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim build all            # both
@@ -65,10 +65,12 @@ for the web `tools/buildweb.py`'s `out/web/<webdir>/libwgrender.a`. The error sa
 
 ```sh
 cd tests && nim c -r tcalls.nim        # how calls are written, and what doesn't compile
+python3 tools/gen_raw.py --check       # raw.nim is what the headers make (needs clang)
 python3 tools/coverage.py --check      # raw.nim against wgrender's headers (needs clang)
 ```
 
-CI runs both, and builds both examples on the desktop.
+CI runs all three, and builds every example on the desktop. After wgrender's API moves,
+`python3 tools/gen_raw.py` regenerates `src/wgr/raw.nim`.
 
 ## Benchmarks
 

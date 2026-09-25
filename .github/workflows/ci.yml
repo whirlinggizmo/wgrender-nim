@@ -1,9 +1,10 @@
 # wgrender-nim CI.
 #
-# raw.nim is written by hand, so what keeps it honest when wgrender's API moves is
-# tools/coverage.py: every declaration checked against the headers by clang, and every
-# one wrapped by wgr.nim. Locally it skips without clang; here --require-clang makes a
-# missing toolchain a failure, so nothing reaches main without the check running.
+# raw.nim is generated from wgrender's headers by tools/gen_raw.py (clang's AST of
+# them), and --check fails if it is stale; tools/coverage.py then checks every
+# declaration against the headers independently, by compiling assertions about it.
+# Locally coverage skips without clang; here --require-clang makes a missing toolchain
+# a failure, so nothing reaches main without the checks running.
 #
 # wgrender comes from the pinned submodule, so the binding is checked against the
 # wgrender it pins rather than whatever wgrender's main happens to be; moving the pin
@@ -24,7 +25,7 @@ concurrency:
 
 jobs:
   coverage:
-    name: raw.nim matches wgrender's headers, wgr.nim wraps it
+    name: raw.nim is generated from wgrender's headers and matches them
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -40,6 +41,9 @@ jobs:
         with:
           version: 5.0.7
           actions-cache-folder: emsdk-cache
+
+      - name: raw.nim is what tools/gen_raw.py makes of the headers
+        run: python3 tools/gen_raw.py --check
 
       - name: Every declaration against the headers, with clang
         run: python3 tools/coverage.py --check --require-clang
@@ -62,10 +66,11 @@ jobs:
           nim-version: "2.2.12"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Both examples, desktop (wgrender compiled in, from its build.json)
+      - name: Every example, desktop (wgrender compiled in, from its build.json)
         run: |
           cd examples/simple && nim build desktop
           cd ../stress && nim build desktop
+          cd ../particles && nim build desktop
 
       - name: How calls are written, and what doesn't compile
         run: cd tests && nim c -r tcalls.nim

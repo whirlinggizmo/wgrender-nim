@@ -48,6 +48,24 @@ doAssert compiles(setTargetFps(60))
 doAssert compiles(logWarn("careful"))
 doAssert rgba(1, 2, 3, 4) is Color
 
+# emitters: the shared calls take either kind; a position or direction takes the kind's
+# vector, a Vec3 in the world or a Vec2 in pixels
+let e3 = Emitter3d(0)
+let e2 = Emitter2d(0)
+doAssert newEmitter3d(Texture(0)) is Emitter3d
+doAssert newEmitter2d(Texture(0)) is Emitter2d
+doAssert compiles(e3.setRate(30.0))
+doAssert compiles(e2.setRate(30.0))
+doAssert compiles(e3.setVelocity(v, spread = 0.2))
+doAssert compiles(e2.setVelocity((0.0, -420.0)))
+doAssert not compiles(e2.setVelocity(v))                   # a 2D one takes a Vec2
+doAssert not compiles(e3.setSpawnCircle(1.0))              # a 3D one spawns in a sphere
+doAssert compiles(e3.setAlphaMode(AlphaMode.Blend))
+doAssert e3.getCount() is int
+doAssert compiles(newScene().add(e3))
+doAssert compiles(newScene().add(e2, 1))
+doAssert not compiles(e3.setAnimation(1))
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)
@@ -55,6 +73,8 @@ proc discardable() {.used.} =
   m.setPosition(1, 2, 3)
   m.setTint(ColorWhite)
   s.setFacing(SpriteFacing.Free)
+  e3.setRate(30.0)
+  e2.burst(300)
 doAssert compiles(discardable())
 
 echo "tcalls: ok"

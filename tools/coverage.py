@@ -2,27 +2,28 @@
 """Does the binding still match wgrender's C API?
 
     tools/coverage.py --check           fail on any mismatch (what CI runs)
-    tools/coverage.py --list            also list the C functions not bound yet
+    tools/coverage.py --list            also list what src/wgr.nim doesn't wrap yet
     tools/coverage.py --require-clang   fail rather than skip without clang (CI)
 
-src/wgr/raw.nim is written by hand, and nothing else checks it: its procs import
-with `header: "wgr.h"`, so the C compiler sees the real prototype of a call, but only
-of a call something makes (an unused declaration is never emitted), and Nim runs it
-with -w, so a parameter declared cint where C now takes a float converts without a
-word. So this checks every declaration against wgrender's headers itself:
+src/wgr/raw.nim is generated (tools/gen_raw.py), and this checks the generator's work
+independently: raw.nim's procs import with `header: "wgr.h"`, so the C compiler sees
+the real prototype of a call, but only of a call something makes (an unused
+declaration is never emitted), and Nim runs it with -w, so a parameter declared cint
+where C now takes a float would convert without a word. So this checks every
+declaration against wgrender's headers itself:
 
   - every proc raw.nim imports is one wgrender declares, with the same parameter and
     return types, and the same variadic-ness
   - every C struct it imports has the fields raw.nim gives it, of the same types
   - every constant it copies has the header's value
-  - every proc raw.nim imports is called by src/wgr.nim: no C call without its Nim one
+  - every function the headers declare is in raw.nim
 
 It does that the way the C compiler would, because it asks it: it writes a C file of
 _Static_asserts from raw.nim's declarations (the function's type against the one
 raw.nim declares, with __builtin_types_compatible_p) and compiles it with clang
 -fsyntax-only against wgrender's headers and compile_flags.txt. clang is emsdk's,
-found the way wgrender-hx's tools/refusals.py finds it. The binding covers part of the
-API on purpose, so the C functions it doesn't bind are a count, not a failure.
+found from the emcc on PATH, else a clang on PATH, else under $EMSDK. src/wgr.nim
+wraps part of raw.nim by hand, so what it doesn't wrap yet is a count, not a failure.
 
 wgrender is WGRENDER_DIR, else a ../wgrender-c checkout beside this one, else the
 submodule, as examples/*/config.nims find it.
@@ -108,7 +109,7 @@ def params_of(text):
 
 def parse_raw():
     """raw.nim's type aliases, callback types, imported structs, constants and procs."""
-    lines = RAW.read_text().splitlines()
+    lines = RAW.read_text(encoding='utf-8').splitlines()
     aliases, callbacks, structs, consts, procs = {}, {}, {}, {}, []
     in_push = False
     i = 0
@@ -207,19 +208,23 @@ def header_functions(clang, wgrender, flags):
         os.unlink(source)
     if out.returncode != 0:
         sys.exit(f'coverage: clang could not read wgrender\'s headers:\n{out.stderr}')
-    functions = {}
+    functions, enum_typedefs = {}, set()
     decoder, text, pos = json.JSONDecoder(), out.stdout, 0
     while True:
         start = text.find('{', pos)
         if start < 0:
             break
         node, pos = decoder.raw_decode(text, start)
+        if node.get('kind') == 'TypedefDecl' and node['type']['qualType'].startswith('enum '):
+            enum_typedefs.add(node['name'])  # before the functions that return one
         if node.get('kind') != 'FunctionDecl' or not node.get('name', '').startswith('wgr_'):
             continue
         params = [(p['type']['qualType'], p['type'].get('desugaredQualType', p['type']['qualType']))
                   for p in node.get('inner', []) if p.get('kind') == 'ParmVarDecl']
         ret = re.match(r'(.*?)\s*\(', node['type']['qualType']).group(1)
-        functions[node['name']] = (ret, params, bool(node.get('variadic')))
+        # clang doesn't desugar a function's return type: an enum typedef stays its name
+        desugared = f'enum {ret}' if ret in enum_typedefs else ret
+        functions[node['name']] = ((ret, desugared), params, bool(node.get('variadic')))
     return functions
 
 
@@ -229,6 +234,7 @@ def asserts(raw, functions):
     """The C file of _Static_asserts, and what each one checks."""
     aliases, callbacks, structs, consts, procs = raw
     enums = {q for _, ps, _ in functions.values() for q, d in ps if d.startswith('enum ')}
+    enums |= {r for (r, d), _, _ in functions.values() if d.startswith('enum ')}
 
     def ret_as_c(c_ret):
         return (c_ret, 'enum ' if c_ret in enums else c_ret)
@@ -241,7 +247,7 @@ def asserts(raw, functions):
         name = p['name']
         if name not in functions:
             continue  # reported by name, below
-        c_ret, c_params, c_variadic = functions[name]
+        (c_ret, _), c_params, c_variadic = functions[name]
         args = []
         for k, (_, typ) in enumerate(p['params']):
             c_param = c_params[k] if k < len(c_params) else None
@@ -275,11 +281,9 @@ def main():
     procs = raw[4]
     problems = []
 
-    # every raw proc has its Nim call in wgr.nim
-    wrappers = WRAPPERS.read_text()
-    for p in procs:
-        if not re.search(rf'\b{p["name"]}\b', wrappers):
-            problems.append(f'wgr.nim: nothing calls {p["name"]}, which raw.nim declares')
+    # raw.nim is generated whole (tools/gen_raw.py); wgr.nim wraps part of it by hand
+    wrappers = WRAPPERS.read_text(encoding='utf-8')
+    wrapped = [p for p in procs if re.search(rf'\b{p["name"]}\b', wrappers)]
 
     clang = find_clang()
     if clang is None:
@@ -306,10 +310,14 @@ def main():
             if m:
                 problems.append(m.group(1) or f'raw.nim: {m.group(2)}')
         unbound = sorted(set(functions) - {p['name'] for p in procs})
-        print(f'coverage: raw.nim binds {len(procs)} of wgrender\'s {len(functions)} functions '
-              f'({len(unbound)} not yet), {len(raw[2])} structs, {len(raw[3])} constants')
+        for name in unbound:
+            problems.append(f'raw.nim: no {name}, which wgrender declares: run tools/gen_raw.py')
+        unwrapped = sorted({p['name'] for p in procs} - {p['name'] for p in wrapped})
+        print(f'coverage: raw.nim declares {len(procs)} of wgrender\'s {len(functions)} functions, '
+              f'{len(raw[2])} structs, {len(raw[3])} constants; wgr.nim wraps {len(wrapped)}')
         if '--list' in args:
-            for name in unbound:
+            print('not wrapped in wgr.nim yet:')
+            for name in unwrapped:
                 print(f'  {name}')
 
     for problem in problems:
@@ -317,7 +325,7 @@ def main():
     if problems:
         print(f'coverage: {len(problems)} problem(s)')
         return 1
-    print('coverage: raw.nim matches wgrender, and wgr.nim wraps all of it')
+    print('coverage: raw.nim matches wgrender')
     return 0
 
 

@@ -36,11 +36,14 @@ type
   Camera3d* = distinct Handle
   Light* = distinct Handle
   Scene* = distinct Handle
+  Emitter3d* = distinct Handle ## particles in the 3D world
+  Emitter2d* = distinct Handle ## particles on the screen, in pixels
   AssetTask* = distinct Handle
 
   AnyHandle* = Audio | Mesh | Texture | Font | Sound | Model | Sprite3d |
-               Camera3d | Light | Scene | AssetTask
-  SceneMember* = Model | Sprite3d | Light ## what a scene's add takes
+               Camera3d | Light | Scene | Emitter3d | Emitter2d | AssetTask
+  SceneMember* = Model | Sprite3d | Light | Emitter3d | Emitter2d ## what a scene's add takes
+  Emitter* = Emitter3d | Emitter2d
 
 
   Vec2* = tuple[x, y: float]
@@ -77,6 +80,13 @@ type
 
   LightKind* {.pure.} = enum
     Directional, Point, Spot
+
+  AlphaMode* {.pure.} = enum
+    ## how a sprite, material or emitter uses alpha
+    Opaque ## alpha ignored
+    Mask   ## fully opaque or fully transparent, split at a cutoff; depth written
+    Blend  ## alpha blended, back to front
+    Add    ## added to what's behind (glows, sparks); not sorted, no depth write
 
   SpriteFacing* {.pure.} = enum
     Camera       ## parallel to the view plane
@@ -117,9 +127,31 @@ type
   FrameCallback* = proc (dt, tickFraction: float) {.closure.}
 
 const
+  ColorLightgray* = WGR_COLOR_LIGHTGRAY
+  ColorGray* = WGR_COLOR_GRAY
+  ColorDarkgray* = WGR_COLOR_DARKGRAY
+  ColorYellow* = WGR_COLOR_YELLOW
+  ColorGold* = WGR_COLOR_GOLD
+  ColorOrange* = WGR_COLOR_ORANGE
+  ColorPink* = WGR_COLOR_PINK
+  ColorRed* = WGR_COLOR_RED
+  ColorMaroon* = WGR_COLOR_MAROON
+  ColorGreen* = WGR_COLOR_GREEN
+  ColorLime* = WGR_COLOR_LIME
+  ColorDarkgreen* = WGR_COLOR_DARKGREEN
+  ColorSkyblue* = WGR_COLOR_SKYBLUE
+  ColorBlue* = WGR_COLOR_BLUE
+  ColorDarkblue* = WGR_COLOR_DARKBLUE
+  ColorPurple* = WGR_COLOR_PURPLE
+  ColorViolet* = WGR_COLOR_VIOLET
+  ColorDarkpurple* = WGR_COLOR_DARKPURPLE
+  ColorBeige* = WGR_COLOR_BEIGE
+  ColorBrown* = WGR_COLOR_BROWN
+  ColorDarkbrown* = WGR_COLOR_DARKBROWN
   ColorWhite* = WGR_COLOR_WHITE
   ColorBlack* = WGR_COLOR_BLACK
-  ColorBlue* = WGR_COLOR_BLUE
+  ColorBlank* = WGR_COLOR_BLANK
+  ColorMagenta* = WGR_COLOR_MAGENTA
   ColorRaywhite* = WGR_COLOR_RAYWHITE
 
 proc `==`*[T: AnyHandle](a, b: T): bool = a.Handle == b.Handle
@@ -434,10 +466,181 @@ proc pick*(scene: Scene; x, y: float; camera = Camera3d(0)): PickResult =
              pointLocal: r.point_local.toNim, pointWorld: r.point_world.toNim,
              normalLocal: r.normal_local.toNim, normalWorld: r.normal_world.toNim)
 
+# --- particles: emitters (wgr_emitter3d.h, wgr_emitter2d.h) ---
+# The two share every call but the ones with a position or a direction, which take a
+# Vec3 in the world or a Vec2 in pixels.
+
+proc newEmitter3d*(texture: Texture): Emitter3d = Emitter3d(wgr_emitter3d_create(texture.Handle))
+proc newEmitter2d*(texture: Texture): Emitter2d = Emitter2d(wgr_emitter2d_create(texture.Handle))
+proc destroy*(e: Emitter3d) = wgr_emitter3d_destroy(e.Handle)
+proc destroy*(e: Emitter2d) = wgr_emitter2d_destroy(e.Handle)
+
+proc setSource*(e: Emitter; x, y, width, height: float): bool {.discardable.} =
+  ## the region of the texture each particle shows, in texture pixels; width or height
+  ## <= 0: the whole texture
+  (when e is Emitter3d: wgr_emitter3d_set_source(e.Handle, x.cfloat, y.cfloat, width.cfloat, height.cfloat)
+   else: wgr_emitter2d_set_source(e.Handle, x.cfloat, y.cfloat, width.cfloat, height.cfloat))
+proc setFrames*(e: Emitter; columns, rows: int; count = 0; perSecond = 0.0): bool {.discardable.} =
+  ## a flipbook: the source in columns x rows frames, the first `count` used (0: all);
+  ## perSecond 0 plays them once over each particle's life, above 0 loops at that rate
+  (when e is Emitter3d: wgr_emitter3d_set_frames(e.Handle, columns.cint, rows.cint, count.cint, perSecond.cfloat)
+   else: wgr_emitter2d_set_frames(e.Handle, columns.cint, rows.cint, count.cint, perSecond.cfloat))
+
+proc setPosition*(e: Emitter3d; value: Vec3): bool {.discardable.} =
+  ## a move: the steady spawns spread along the way, and particles inherit its velocity
+  wgr_emitter3d_set_position(e.Handle, value.x, value.y, value.z)
+proc setPosition*(e: Emitter3d; x, y, z: float): bool {.discardable.} =
+  wgr_emitter3d_set_position(e.Handle, x, y, z)
+proc setPosition*(e: Emitter2d; value: Vec2): bool {.discardable.} =
+  ## a move: the steady spawns spread along the way, and particles inherit its velocity
+  wgr_emitter2d_set_position(e.Handle, value.x, value.y)
+proc setPosition*(e: Emitter2d; x, y: float): bool {.discardable.} =
+  wgr_emitter2d_set_position(e.Handle, x, y)
+proc jump*(e: Emitter3d; value: Vec3): bool {.discardable.} =
+  ## put it somewhere without a move: nothing spawns along the way
+  wgr_emitter3d_jump(e.Handle, value.x, value.y, value.z)
+proc jump*(e: Emitter3d; x, y, z: float): bool {.discardable.} = wgr_emitter3d_jump(e.Handle, x, y, z)
+proc jump*(e: Emitter2d; value: Vec2): bool {.discardable.} =
+  ## put it somewhere without a move: nothing spawns along the way
+  wgr_emitter2d_jump(e.Handle, value.x, value.y)
+proc jump*(e: Emitter2d; x, y: float): bool {.discardable.} = wgr_emitter2d_jump(e.Handle, x, y)
+proc getPosition*(e: Emitter3d): Vec3 = wgr_emitter3d_get_position(e.Handle).toNim
+proc getPosition*(e: Emitter2d): Vec2 = wgr_emitter2d_get_position(e.Handle).toNim
+
+proc setRate*(e: Emitter; perSecond: float): bool {.discardable.} =
+  ## the steady rate, particles per second (0: bursts only)
+  (when e is Emitter3d: wgr_emitter3d_set_rate(e.Handle, perSecond.cfloat)
+   else: wgr_emitter2d_set_rate(e.Handle, perSecond.cfloat))
+proc burst*(e: Emitter; count: int): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_burst(e.Handle, count.cint)
+   else: wgr_emitter2d_burst(e.Handle, count.cint))
+proc setEmitting*(e: Emitter; emitting: bool): bool {.discardable.} =
+  ## false stops the steady rate; the particles alive finish their lives
+  (when e is Emitter3d: wgr_emitter3d_set_emitting(e.Handle, emitting)
+   else: wgr_emitter2d_set_emitting(e.Handle, emitting))
+proc isEmitting*(e: Emitter): bool =
+  (when e is Emitter3d: wgr_emitter3d_is_emitting(e.Handle)
+   else: wgr_emitter2d_is_emitting(e.Handle))
+proc setMax*(e: Emitter; count: int): bool {.discardable.} =
+  ## at most this many alive (default 1024); false, and refused, below 1 or above 65536
+  (when e is Emitter3d: wgr_emitter3d_set_max(e.Handle, count.cint)
+   else: wgr_emitter2d_set_max(e.Handle, count.cint))
+proc setLife*(e: Emitter; minSeconds, maxSeconds: float): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_set_life(e.Handle, minSeconds.cfloat, maxSeconds.cfloat)
+   else: wgr_emitter2d_set_life(e.Handle, minSeconds.cfloat, maxSeconds.cfloat))
+proc prewarm*(e: Emitter; seconds: float): bool {.discardable.} =
+  ## start over as if the steady rate had run for that long
+  (when e is Emitter3d: wgr_emitter3d_prewarm(e.Handle, seconds.cfloat)
+   else: wgr_emitter2d_prewarm(e.Handle, seconds.cfloat))
+
+proc setSpawnBox*(e: Emitter3d; halfExtents: Vec3): bool {.discardable.} =
+  ## born anywhere in a box around the position (half sizes; default a point)
+  wgr_emitter3d_set_spawn_box(e.Handle, halfExtents.x, halfExtents.y, halfExtents.z)
+proc setSpawnBox*(e: Emitter2d; halfExtents: Vec2): bool {.discardable.} =
+  ## born anywhere in a box around the position (half sizes; default a point)
+  wgr_emitter2d_set_spawn_box(e.Handle, halfExtents.x, halfExtents.y)
+proc setSpawnSphere*(e: Emitter3d; radius: float): bool {.discardable.} =
+  wgr_emitter3d_set_spawn_sphere(e.Handle, radius.cfloat)
+proc setSpawnCircle*(e: Emitter2d; radius: float): bool {.discardable.} =
+  wgr_emitter2d_set_spawn_circle(e.Handle, radius.cfloat)
+proc setVelocity*(e: Emitter3d; velocity: Vec3; spread = 0.0; speedVariance = 0.0): bool {.discardable.} =
+  ## along `velocity` at its length's speed, turned up to `spread` radians off it and
+  ## faster or slower by up to `speedVariance` (0..1) of it
+  wgr_emitter3d_set_velocity(e.Handle, velocity.x, velocity.y, velocity.z, spread, speedVariance)
+proc setVelocity*(e: Emitter2d; velocity: Vec2; spread = 0.0; speedVariance = 0.0): bool {.discardable.} =
+  ## along `velocity` at its length's speed (pixels per second), turned up to `spread`
+  ## radians off it and faster or slower by up to `speedVariance` (0..1) of it
+  wgr_emitter2d_set_velocity(e.Handle, velocity.x, velocity.y, spread, speedVariance)
+proc setGravity*(e: Emitter3d; acceleration: Vec3): bool {.discardable.} =
+  wgr_emitter3d_set_gravity(e.Handle, acceleration.x, acceleration.y, acceleration.z)
+proc setGravity*(e: Emitter2d; acceleration: Vec2): bool {.discardable.} =
+  wgr_emitter2d_set_gravity(e.Handle, acceleration.x, acceleration.y)
+proc setDrag*(e: Emitter; perSecond: float): bool {.discardable.} =
+  ## slows particles in proportion to their speed (1 loses about 63% a second)
+  (when e is Emitter3d: wgr_emitter3d_set_drag(e.Handle, perSecond.cfloat)
+   else: wgr_emitter2d_set_drag(e.Handle, perSecond.cfloat))
+proc setInheritVelocity*(e: Emitter; fraction: float): bool {.discardable.} =
+  ## that fraction of the emitter's own movement, added at birth
+  (when e is Emitter3d: wgr_emitter3d_set_inherit_velocity(e.Handle, fraction.cfloat)
+   else: wgr_emitter2d_set_inherit_velocity(e.Handle, fraction.cfloat))
+
+proc setSize*(e: Emitter; start, finish: float; variance = 0.0): bool {.discardable.} =
+  ## from `start` at birth to `finish` at death, each particle's scaled by up to
+  ## `variance` (0..1)
+  (when e is Emitter3d: wgr_emitter3d_set_size(e.Handle, start.cfloat, finish.cfloat, variance.cfloat)
+   else: wgr_emitter2d_set_size(e.Handle, start.cfloat, finish.cfloat, variance.cfloat))
+proc setColor*(e: Emitter; start, finish: Color): bool {.discardable.} =
+  ## from `start` at birth to `finish` at death, alpha included (a fade)
+  (when e is Emitter3d: wgr_emitter3d_set_color(e.Handle, start, finish)
+   else: wgr_emitter2d_set_color(e.Handle, start, finish))
+proc addSizeKey*(e: Emitter; t, size: float): bool {.discardable.} =
+  ## a curve point at `t` (0..1 of a particle's life), up to 8; clearSizeKeys first
+  (when e is Emitter3d: wgr_emitter3d_add_size_key(e.Handle, t.cfloat, size.cfloat)
+   else: wgr_emitter2d_add_size_key(e.Handle, t.cfloat, size.cfloat))
+proc clearSizeKeys*(e: Emitter): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_clear_size_keys(e.Handle)
+   else: wgr_emitter2d_clear_size_keys(e.Handle))
+proc addColorKey*(e: Emitter; t: float; color: Color): bool {.discardable.} =
+  ## a curve point at `t` (0..1 of a particle's life), up to 8; clearColorKeys first
+  (when e is Emitter3d: wgr_emitter3d_add_color_key(e.Handle, t.cfloat, color)
+   else: wgr_emitter2d_add_color_key(e.Handle, t.cfloat, color))
+proc clearColorKeys*(e: Emitter): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_clear_color_keys(e.Handle)
+   else: wgr_emitter2d_clear_color_keys(e.Handle))
+proc addPaletteColor*(e: Emitter; color: Color): bool {.discardable.} =
+  ## up to 8; each particle picks one at birth, and it tints the color over its life
+  (when e is Emitter3d: wgr_emitter3d_add_palette_color(e.Handle, color)
+   else: wgr_emitter2d_add_palette_color(e.Handle, color))
+proc clearPalette*(e: Emitter): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_clear_palette(e.Handle)
+   else: wgr_emitter2d_clear_palette(e.Handle))
+proc setSpin*(e: Emitter; min, max: float): bool {.discardable.} =
+  ## radians per second, between min and max, from a random angle
+  (when e is Emitter3d: wgr_emitter3d_set_spin(e.Handle, min.cfloat, max.cfloat)
+   else: wgr_emitter2d_set_spin(e.Handle, min.cfloat, max.cfloat))
+proc setStretch*(e: Emitter; seconds: float): bool {.discardable.} =
+  ## streaks along the motion, as long as the distance moved in `seconds` (0: off)
+  (when e is Emitter3d: wgr_emitter3d_set_stretch(e.Handle, seconds.cfloat)
+   else: wgr_emitter2d_set_stretch(e.Handle, seconds.cfloat))
+proc setAlphaMode*(e: Emitter; mode: AlphaMode; cutoff = 0.0): bool {.discardable.} =
+  ## default AlphaMode.Add
+  (when e is Emitter3d: wgr_emitter3d_set_alpha_mode(e.Handle, ord(mode).cint, cutoff.cfloat)
+   else: wgr_emitter2d_set_alpha_mode(e.Handle, ord(mode).cint, cutoff.cfloat))
+proc setSeed*(e: Emitter; seed: uint32): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_set_seed(e.Handle, seed.cuint)
+   else: wgr_emitter2d_set_seed(e.Handle, seed.cuint))
+
+proc getCount*(e: Emitter): int =
+  ## particles alive now
+  (when e is Emitter3d: wgr_emitter3d_get_count(e.Handle)
+   else: wgr_emitter2d_get_count(e.Handle)).int
+proc clear*(e: Emitter) =
+  ## all of them gone
+  (when e is Emitter3d: wgr_emitter3d_clear(e.Handle)
+   else: wgr_emitter2d_clear(e.Handle))
+proc setVisible*(e: Emitter; visible: bool): bool {.discardable.} =
+  (when e is Emitter3d: wgr_emitter3d_set_visible(e.Handle, visible)
+   else: wgr_emitter2d_set_visible(e.Handle, visible))
+proc draw*(e: Emitter) =
+  ## immediate (a 3D one in 3D mode), for one not in a scene
+  (when e is Emitter3d: wgr_emitter3d_draw(e.Handle)
+   else: wgr_emitter2d_draw(e.Handle))
+
+# --- debug ---
+
+proc enableFps*(x, y, fontSize: int) =
+  ## wgrender's own FPS overlay, drawn at the end of every frame
+  wgr_debug_enable_fps(x.cint, y.cint, fontSize.cint)
+
 # --- frame ---
 
 proc beginFrame*() = wgr_render_begin_frame()
 proc endFrame*() = wgr_render_end_frame()
+proc beginMode3d*() = wgr_render_begin_mode_3d() ## immediate 3D drawing, through the scene's camera
+proc endMode3d*() = wgr_render_end_mode_3d()
+proc drawGrid*(slices: int; spacing: float; color: Color) =
+  ## a grid on the ground (XZ), between beginMode3d and endMode3d
+  wgr_shape3d_draw_grid(slices.cint, spacing.cfloat, color)
 proc clearBackground*(color: Color) = wgr_render_clear_background(color)
 proc getScreenSize*(): Vec2 = wgr_window_get_screen_size().toNim
 
