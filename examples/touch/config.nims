@@ -125,10 +125,14 @@ proc buildWeb() =
   echo name & " (web) -> " & relativePath(site, thisDir) & "/"
   exec "nim c -d:emscripten --out:" & quoteShell(site / name & ".js") & " " & mainEntry.quoteShell
   # wgrender's page shell, opening this example by default (its default is "hello"),
-  # finished by wgrender's deploy script: versioned file names and examples.json.
+  # its source link and name this repository's, finished by wgrender's deploy script:
+  # versioned file names and examples.json.
   let shell = workDir / webVariant() / "index.html"
   writeFile(shell, readFile(wgrenderDir / "examples/web/index.html")
-    .replace("""params.get("ex") || "hello"""", "params.get(\"ex\") || \"" & name & "\""))
+    .replace("""params.get("ex") || "hello"""", "params.get(\"ex\") || \"" & name & "\"")
+    .replace("wgrender-c/blob/main/examples/{name}.c", "wgrender-nim/blob/main/examples/{name}/src/{name}.nim")
+    .replace("libwgrender examples</title>", "wgrender-nim examples</title>")
+    .replace("<b>libwgrender</b>", "<b>wgrender-nim</b>"))
   exec python() & " " & quoteShell(wgrenderDir / "tools/webdeploy.py") & " " &
        site.quoteShell & " " & shell.quoteShell
   echo "built " & relativePath(site, thisDir) & " — `nim serve`, then open http://localhost:8000/"

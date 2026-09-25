@@ -30,6 +30,9 @@ ROOT = Path(__file__).resolve().parents[1]
 VARIANT = 'webgl2-nothreads'
 WEB = {'BACKEND': 'webgl2', 'WEB_THREADS': '0', 'WEB_DEBUG': '0'}
 FIRST = 'simple'  # what the page opens with
+# the page shell's source link, and this repository's in its place
+C_SOURCE = 'https://github.com/whirlinggizmo/wgrender-c/blob/main/examples/{name}.c'
+SOURCE = 'https://github.com/whirlinggizmo/wgrender-nim/blob/main/examples/{name}/src/{name}.nim'
 
 
 def examples():
@@ -69,8 +72,13 @@ def main():
     text = (wgrender / 'examples/web/index.html').read_text(encoding='utf-8')
     if 'params.get("ex") || "hello"' not in text:
         sys.exit(f'site: {wgrender}/examples/web/index.html no longer defaults to "hello": update this')
+    for want in (C_SOURCE, '<title>libwgrender examples</title>', '<b>libwgrender</b>'):
+        if want not in text:
+            sys.exit(f'site: {wgrender}/examples/web/index.html has no {want}: update this')
     text = text.replace('params.get("ex") || "hello"', f'params.get("ex") || "{FIRST}"')
-    text = text.replace('<title>wgrender examples</title>', '<title>wgrender examples, in Nim</title>')
+    text = text.replace(C_SOURCE, SOURCE)
+    text = text.replace('<title>libwgrender examples</title>', '<title>wgrender-nim examples</title>')
+    text = text.replace('<b>libwgrender</b>', '<b>wgrender-nim</b>')
     shell.write_text(text, encoding='utf-8')
     subprocess.run([sys.executable, wgrender / 'tools/webdeploy.py', site, shell], check=True)
     shutil.copytree(wgrender / 'examples/assets', site / 'assets', ignore=shutil.ignore_patterns('bench'))
