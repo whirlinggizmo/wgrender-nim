@@ -10,6 +10,9 @@
 #   nim serve             serve the web build on http://localhost:8000 (wgrender's tools/serve.py:
 #                         COOP/COEP headers for threads, examples/assets at /assets,
 #                         gzip-compressed responses)
+#   nim webcheck          load the web build in a headless browser; fail on a console
+#                         error, a program that never starts, or a blank screen
+#                         (tools/webcheck.py; the screenshot goes to build/web/<variant>/)
 #   nim clean             remove out/ (what the builds made) and build/ (their work: Nim's cache)
 #
 # The wg* layout (whirlinggizmo/.github CONVENTIONS.md, "Build directories"): what a
@@ -21,7 +24,7 @@
 #
 # Web options are wgrender's web build settings, read from the environment:
 #   BACKEND=webgl2|webgpu   WEB_THREADS=1|0   WEB_DEBUG=0|1   (e.g. BACKEND=webgpu nim build web)
-# wgrender, in order (the same as wgrender-hx):
+# wgrender, in order:
 #   1. WGRENDER_DIR=/path/to/wgrender
 #   2. ../wgrender-c beside this repository: a checkout you are working on, so a change
 #      there is tried here without pushing it and moving the pin
@@ -141,6 +144,10 @@ task build, "Build: nim build desktop|web|all":
 task serve, "Serve the web build on http://localhost:8000":
   exec python() & " " & quoteShell(wgrenderDir / "tools/serve.py") & " 8000 " &
        quoteShell(webOut()) & " --gzip"
+
+task webcheck, "Load the web build in a headless browser; fail if it doesn't run":
+  exec python() & " " & quoteShell(repoDir / "tools/webcheck.py") & " " & quoteShell(webOut()) &
+       " " & quoteShell(wgrenderDir) & " " & quoteShell(workDir / webVariant() / "check.png")
 
 task clean, "Remove build outputs":
   rmDir(outDir)

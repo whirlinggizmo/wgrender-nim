@@ -29,6 +29,7 @@ nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/mac
 nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim build all            # both
 nim serve                # http://localhost:8000/ (COOP/COEP headers, assets at /assets)
+nim webcheck             # load the web build in a headless browser, fail if it doesn't run
 nim clean
 ```
 
@@ -47,7 +48,7 @@ editing a wgrender header, build with `-f`.
 
 ## Which wgrender
 
-In this order, as wgrender-hx finds it:
+In this order:
 
 1. `-d:wgrenderDir=<path>`, or `WGRENDER_DIR`
 2. a `../wgrender-c` checkout beside this one, so a change there is tried here without
