@@ -47,6 +47,13 @@ RAW = ROOT / 'src/wgr/raw.nim'
 WRAPPER_DIR = ROOT / 'src/wgr'
 
 
+# C functions a wrapper covers under another C name, with why: they count as wrapped.
+COVERED_BY = {
+    'wgr_text_draw_ex': 'drawText(font, ...) uses wgr_text_draw_n: a Nim string has its length, and may hold a 0',
+    'wgr_text_measure_ex': 'measureText(font, ...) uses wgr_text_measure_n, for the same reason',
+}
+
+
 def wrapper_modules(public_only=False):
     return sorted(p for p in WRAPPER_DIR.glob('*.nim') if p.name != 'raw.nim')
 
@@ -335,7 +342,7 @@ def main():
 
     # raw.nim is generated whole (tools/gen_raw.py); the wgr modules wrap it by hand
     wrappers = '\n'.join(p.read_text(encoding='utf-8') for p in wrapper_modules())
-    wrapped = [p for p in procs if re.search(rf'\b{p["name"]}\b', wrappers)]
+    wrapped = [p for p in procs if re.search(rf'\b{p["name"]}\b', wrappers) or p['name'] in COVERED_BY]
     for module in wrapper_modules(public_only=True):
         problems += [f'{module.name}: {f}' for f in c_types_in_wrappers(module.read_text(encoding='utf-8'))]
 
@@ -370,6 +377,8 @@ def main():
         print(f'coverage: raw.nim declares {len(procs)} of wgrender\'s {len(functions)} functions, '
               f'{len(raw[2])} structs, {len(raw[3])} constants; the wgr modules wrap {len(wrapped)}')
         if '--list' in args:
+            for name, why in COVERED_BY.items():
+                print(f'covered: {name}: {why}')
             print('not wrapped yet:')
             for name in unwrapped:
                 print(f'  {name}')

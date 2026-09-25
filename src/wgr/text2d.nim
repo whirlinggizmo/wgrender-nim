@@ -2,9 +2,10 @@
 
 import ./types, ./internal/convert, ./raw
 
-proc newText2d*(font: Font): Text2d =
-  ## font none: the default font (setDefaultFont)
-  Text2d(wgr_text2d_create(font.cHandle))
+proc newText2d*(font: Font): Text2d = Text2d(wgr_text2d_create(font.cHandle))
+proc newText2d*(): Text2d =
+  ## in the default font (setDefaultFont)
+  Text2d(wgr_text2d_create(0))
 proc destroy*(text: Text2d) = wgr_text2d_destroy(text.cHandle)
 proc setFont*(text: Text2d; font: Font): bool {.discardable.} = wgr_text2d_set_font(text.cHandle, font.cHandle)
 proc setText*(text: Text2d; value: string): bool {.discardable.} = wgr_text2d_set_text(text.cHandle, value.cstring)

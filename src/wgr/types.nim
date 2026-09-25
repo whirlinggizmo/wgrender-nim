@@ -186,6 +186,7 @@ type
 
 const
   MaxGamepads* = 4 ## pads at once, each keeping its slot (0 .. 3) while connected
+  MaxTouches* = 8  ## fingers at once (a touch's id is 0 ..< MaxTouches)
   ColorLightgray* = WGR_COLOR_LIGHTGRAY
   ColorGray* = WGR_COLOR_GRAY
   ColorDarkgray* = WGR_COLOR_DARKGRAY
@@ -343,4 +344,5 @@ typedef char wgr_nim_GamepadAxis_RightY_is_out_of_date_with_wgr_input_h[(WGR_GAM
 typedef char wgr_nim_GamepadAxis_LeftTrigger_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_LEFT_TRIGGER == 4) ? 1 : -1];
 typedef char wgr_nim_GamepadAxis_RightTrigger_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_RIGHT_TRIGGER == 5) ? 1 : -1];
 typedef char wgr_nim_MaxGamepads_is_out_of_date_with_wgr_input_h[(WGR_INPUT_MAX_GAMEPADS == 4) ? 1 : -1];
+typedef char wgr_nim_MaxTouches_is_out_of_date_with_wgr_input_h[(WGR_INPUT_MAX_TOUCHES == 8) ? 1 : -1];
 """.}

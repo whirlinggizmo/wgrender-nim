@@ -3,6 +3,7 @@
 import ./types, ./internal/convert, ./raw
 
 proc newSprite2d*(texture: Texture): Sprite2d = Sprite2d(wgr_sprite2d_create(texture.cHandle))
+proc newSprite2d*(): Sprite2d = Sprite2d(wgr_sprite2d_create(0)) ## its texture set later (setTexture)
 
 proc destroy*(sprite: Sprite2d) = wgr_sprite2d_destroy(sprite.cHandle)
 

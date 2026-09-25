@@ -100,6 +100,9 @@ when defined(emscripten):
 else:
   switch("nimcache", workDir / desktopVariant() / "nimcache")
   switch("define", "wgrAssetBase=" & wgrenderDir / "examples/assets")
+  # this build's work directory, relative to the example (it runs from there), for a
+  # program that keeps files of its own there, such as fetch's download cache
+  switch("define", "wgrWorkDir=build/" & desktopVariant())
 
 proc python(): string =
   ## python3 where there is one, else python (Windows)

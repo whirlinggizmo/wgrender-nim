@@ -6,9 +6,10 @@ proc drawText*(font: Font; text: string; position: Vec3; size: float; color: Col
   ## in the world, facing the camera, in 3D mode (for text that stays, Text3d)
   wgr_text_draw_3d(font.cHandle, text.cstring, position.x, position.y, position.z, size.cfloat, color)
 
-proc newText3d*(font: Font): Text3d =
-  ## font none: the default font (setDefaultFont)
-  Text3d(wgr_text3d_create(font.cHandle))
+proc newText3d*(font: Font): Text3d = Text3d(wgr_text3d_create(font.cHandle))
+proc newText3d*(): Text3d =
+  ## in the default font (setDefaultFont)
+  Text3d(wgr_text3d_create(0))
 proc destroy*(text: Text3d) = wgr_text3d_destroy(text.cHandle)
 proc setFont*(text: Text3d; font: Font): bool {.discardable.} = wgr_text3d_set_font(text.cHandle, font.cHandle)
 proc setText*(text: Text3d; value: string): bool {.discardable.} = wgr_text3d_set_text(text.cHandle, value.cstring)
