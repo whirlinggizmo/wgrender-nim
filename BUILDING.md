@@ -15,7 +15,7 @@ than it would be linking a prebuilt `libwgrender.a`.
     with `--cc:vcc`
 - for the web: Emscripten (emsdk), with `emcc` on `PATH`; on Windows that's `emcc.bat`,
   which the build names for Nim
-- Python 3 for `nim serve` and the web page (wgrender's `tools/serve.py` and
+- Python 3 for `nim serve` and the web page (`tools/serve.py` and
   `tools/webdeploy.py`); emsdk brings one
 - on Linux, the system's GL, X11 and ALSA dev packages, which sokol links:
   `python3 project/lib/wgrender-c/tools/deps.py install` (apt, dnf or pacman)
@@ -26,7 +26,7 @@ than it would be linking a prebuilt `libwgrender.a`.
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
 cd wgrender-nim/examples/simple     # or any other in examples/
 nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
-nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
+nim build web            # out/web/webgl2/: simple.js + simple.wasm and the page (web/index.html)
 nim build all            # both
 nim serve                # http://localhost:8000/ (COOP/COEP headers, assets at /assets)
 nim webcheck             # load the web build in a headless browser, fail if it doesn't run
@@ -44,10 +44,17 @@ The web build is chosen by the environment, spelled as wgrender's own tools spel
 which `nim serve` sends; `WEB_THREADS=0` runs on any static host.
 
 `python3 tools/site.py` builds every example that way (WebGL2, `WEB_THREADS=0`) and
-gathers them on one page with wgrender's page shell and its assets, into
+gathers them on one page (`web/index.html`) with wgrender's assets, into
 `out/web/webgl2-nothreads/`: what `.github/workflows/pages.yml` publishes to
 https://whirlinggizmo.github.io/wgrender-nim/. The examples load their assets from
 `assets` beside the page, so the site works at a domain root or under a path.
+
+The web tools are this repository's own: `web/index.html` (the page, with a picker and
+a link to each example's source) and `tools/serve.py`, `tools/webdeploy.py`,
+`tools/weblib.py` and `tools/webwatch.py`, taken from wgrender's. What comes from
+wgrender is the library (its headers and sources), `examples/assets`, which
+`tools/serve.py --assets` mounts at `/assets`, and for `tools/benchmarks.py` its
+benchmark harness, since the numbers are measured against its own C baseline.
 
 Nim rebuilds a C file when it changes, but not when a header it includes does, so after
 editing a wgrender header, build with `-f`.

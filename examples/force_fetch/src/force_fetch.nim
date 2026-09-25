@@ -14,7 +14,7 @@ const
   # Where assets load from. Desktop: config.nims points this at wgrender's
   # examples/assets. Web: "assets" beside the page, fetched on a cache miss then stored
   # in idbfs; relative, not "/assets", so the site works wherever it is hosted: at a
-  # domain root (wgrender's tools/serve.py mounts examples/assets at /assets) and
+  # domain root (tools/serve.py mounts wgrender's examples/assets at /assets) and
   # equally under a path, as GitHub Pages serves this project at /wgrender-nim/.
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"

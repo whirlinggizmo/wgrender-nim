@@ -7,15 +7,15 @@ https://whirlinggizmo.github.io/wgrender-nim/
 
 Each example is one wasm program with wgrender compiled in, as wgrender's own C
 examples are, so they share one directory the way wgrender's site does: every
-example's .js and .wasm, wgrender's page shell (its picker lists them; `simple` opens
-first), the picker's examples.json and the page's versions from wgrender's
-tools/webdeploy.py, and wgrender's examples/assets beside them (not the benchmarks'),
-which the examples load as "assets", relative to the page.
+example's .js and .wasm, the page (web/index.html: its picker lists them, `simple`
+opens first, and each example links to its source), the picker's examples.json and
+the page's versions from tools/webdeploy.py, and wgrender's examples/assets beside
+them (not the benchmarks'), which the examples load as "assets", relative to the page.
 
 The builds are WebGL2 without threads (WEB_THREADS=0): a static host such as GitHub
 Pages sends no COOP/COEP headers, and a threaded build won't start without them. The
 site is a web build of this repository's, so it goes where one goes:
-out/web/webgl2-nothreads/, its work in build/web/webgl2-nothreads/.
+out/web/webgl2-nothreads/.
 """
 import os
 import shutil
@@ -29,10 +29,6 @@ from coverage import find_wgrender  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 VARIANT = 'webgl2-nothreads'
 WEB = {'BACKEND': 'webgl2', 'WEB_THREADS': '0', 'WEB_DEBUG': '0'}
-FIRST = 'simple'  # what the page opens with
-# the page shell's source link, and this repository's in its place
-C_SOURCE = 'https://github.com/whirlinggizmo/wgrender-c/blob/main/examples/{name}.c'
-SOURCE = 'https://github.com/whirlinggizmo/wgrender-nim/blob/main/examples/{name}/src/{name}.nim'
 
 
 def examples():
@@ -51,10 +47,8 @@ def main():
             subprocess.run([nim, 'build', 'web'], cwd=example, check=True, env=dict(os.environ, **WEB))
 
     site = ROOT / 'out/web' / VARIANT
-    work = ROOT / 'build/web' / VARIANT
     shutil.rmtree(site, ignore_errors=True)
     site.mkdir(parents=True)
-    work.mkdir(parents=True, exist_ok=True)
     built = []
     for example in examples():
         name, build = example.name, example / 'out/web' / VARIANT
@@ -68,19 +62,9 @@ def main():
     if not built:
         sys.exit('site: nothing built')
 
-    shell = work / 'index.html'
-    text = (wgrender / 'examples/web/index.html').read_text(encoding='utf-8')
-    if 'params.get("ex") || "hello"' not in text:
-        sys.exit(f'site: {wgrender}/examples/web/index.html no longer defaults to "hello": update this')
-    for want in (C_SOURCE, '<title>libwgrender examples</title>', '<b>libwgrender</b>'):
-        if want not in text:
-            sys.exit(f'site: {wgrender}/examples/web/index.html has no {want}: update this')
-    text = text.replace('params.get("ex") || "hello"', f'params.get("ex") || "{FIRST}"')
-    text = text.replace(C_SOURCE, SOURCE)
-    text = text.replace('<title>libwgrender examples</title>', '<title>wgrender-nim examples</title>')
-    text = text.replace('<b>libwgrender</b>', '<b>wgrender-nim</b>')
-    shell.write_text(text, encoding='utf-8')
-    subprocess.run([sys.executable, wgrender / 'tools/webdeploy.py', site, shell], check=True)
+    # web/index.html opens simple already; tools/webdeploy.py writes in the versions
+    # and examples.json
+    subprocess.run([sys.executable, ROOT / 'tools/webdeploy.py', site, ROOT / 'web/index.html'], check=True)
     shutil.copytree(wgrender / 'examples/assets', site / 'assets', ignore=shutil.ignore_patterns('bench'))
     size = sum(f.stat().st_size for f in site.rglob('*') if f.is_file())
     print(f'site -> {site} ({len(built)} examples: {", ".join(built)}; {size:,} bytes with assets)')

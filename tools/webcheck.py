@@ -3,13 +3,13 @@
 
     tools/webcheck.py SITE WGRENDER_DIR SHOT     (what `nim webcheck` runs)
 
-Serves SITE with wgrender's tools/serve.py (COOP/COEP headers, so a threaded build
-runs too), loads it for 8 s, moves the mouse over the middle of the canvas, and fails
+Serves SITE with tools/serve.py (COOP/COEP headers, so a threaded build runs too;
+WGRENDER_DIR's examples/assets at /assets), loads it for 8 s, moves the mouse over the middle of the canvas, and fails
 on a console error, an uncaught exception, the browser's own error log, a program that
 never started (wgrender logs its backend when it does), or a screen of one colour.
 The screenshot goes to SHOT, the build's work directory rather than its site. The
-browser plumbing is wgrender's tools/weblib.py, a Chromium-based browser (Chrome,
-Chromium, Brave, Edge) found as it finds one.
+browser plumbing is tools/weblib.py, a Chromium-based browser (Chrome, Chromium,
+Brave, Edge) found as it finds one.
 """
 import base64
 import re
@@ -18,6 +18,10 @@ import time
 import urllib.parse
 from pathlib import Path
 
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))  # an embedded Python (Windows) doesn't add it
+import weblib  # noqa: E402
+
 
 def main():
     if len(sys.argv) != 4:
@@ -25,14 +29,12 @@ def main():
     site, wgrender, shot = (Path(a).resolve() for a in sys.argv[1:])
     if not any(site.glob('*.wasm')) or not (site / 'index.html').exists():
         sys.exit(f'FAILED: no web build in {site}: build it first (nim build web)')
-    sys.path.insert(0, str(wgrender / 'tools'))
-    import weblib
 
     processes = weblib.RunProcesses('nim-webcheck')
     errors, lines, started = [], [], []
     try:
         port = weblib.free_port()
-        processes.spawn([weblib.PYTHON, wgrender / 'tools/serve.py', port, site])
+        processes.spawn([weblib.PYTHON, HERE / 'serve.py', port, site, '--assets', wgrender / 'examples/assets'])
         weblib.wait_for(f'http://127.0.0.1:{port}/examples.json', 'tools/serve.py')
         debug_base, browser = weblib.launch_browser(processes, weblib.find_browser(), 'headless')
         target = browser.send('Target.createTarget', {'url': 'about:blank'})['targetId']

@@ -72,7 +72,7 @@ CI runs both, with `tcalls` and both examples, whenever the submodule moves.
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
 cd wgrender-nim/examples/simple     # or any other in examples/
 nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
-nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
+nim build web            # out/web/webgl2/: simple.js + simple.wasm and the page
 nim serve                # http://localhost:8000/
 ```
 

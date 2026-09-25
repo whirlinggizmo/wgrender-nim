@@ -5,11 +5,11 @@
 #                         ... (wgrender compiled in, by src/wgr/internal/build.nim); with MSVC,
 #                         nim build --cc:vcc desktop: out/windows/msvc/
 #   nim build web         out/web/<variant>/ (out/web/webgl2 by default): <name>.js/.wasm +
-#                         wgrender's page shell
+#                         the page (web/index.html)
 #   nim build all         both
-#   nim serve             serve the web build on http://localhost:8000 (wgrender's tools/serve.py:
-#                         COOP/COEP headers for threads, examples/assets at /assets,
-#                         gzip-compressed responses)
+#   nim serve             serve the web build on http://localhost:8000 (tools/serve.py:
+#                         COOP/COEP headers for threads, wgrender's examples/assets at
+#                         /assets, gzip-compressed responses)
 #   nim webcheck          load the web build in a headless browser; fail on a console
 #                         error, a program that never starts, or a blank screen
 #                         (tools/webcheck.py; the screenshot goes to build/web/<variant>/)
@@ -124,16 +124,15 @@ proc buildWeb() =
   mkDir(site)
   echo name & " (web) -> " & relativePath(site, thisDir) & "/"
   exec "nim c -d:emscripten --out:" & quoteShell(site / name & ".js") & " " & mainEntry.quoteShell
-  # wgrender's page shell, opening this example by default (its default is "hello"),
-  # its source link and name this repository's, finished by wgrender's deploy script:
-  # versioned file names and examples.json.
+  # this repository's page, opening this example, finished by tools/webdeploy.py:
+  # versioned file names and examples.json
+  let page = readFile(repoDir / "web/index.html")
+  const first = """/*wgr:first*/"simple""""
+  if first notin page:
+    quit "web/index.html: no " & first & " to open this example with", 1
   let shell = workDir / webVariant() / "index.html"
-  writeFile(shell, readFile(wgrenderDir / "examples/web/index.html")
-    .replace("""params.get("ex") || "hello"""", "params.get(\"ex\") || \"" & name & "\"")
-    .replace("wgrender-c/blob/main/examples/{name}.c", "wgrender-nim/blob/main/examples/{name}/src/{name}.nim")
-    .replace("libwgrender examples</title>", "wgrender-nim examples</title>")
-    .replace("<b>libwgrender</b>", "<b>wgrender-nim</b>"))
-  exec python() & " " & quoteShell(wgrenderDir / "tools/webdeploy.py") & " " &
+  writeFile(shell, page.replace(first, "/*wgr:first*/\"" & name & "\""))
+  exec python() & " " & quoteShell(repoDir / "tools/webdeploy.py") & " " &
        site.quoteShell & " " & shell.quoteShell
   echo "built " & relativePath(site, thisDir) & " — `nim serve`, then open http://localhost:8000/"
 
@@ -149,8 +148,8 @@ task build, "Build: nim build desktop|web|all":
     quit "usage: nim build desktop|web|all", 1
 
 task serve, "Serve the web build on http://localhost:8000":
-  exec python() & " " & quoteShell(wgrenderDir / "tools/serve.py") & " 8000 " &
-       quoteShell(webOut()) & " --gzip"
+  exec python() & " " & quoteShell(repoDir / "tools/serve.py") & " 8000 " &
+       quoteShell(webOut()) & " --assets " & quoteShell(wgrenderDir / "examples/assets") & " --gzip"
 
 task webcheck, "Load the web build in a headless browser; fail if it doesn't run":
   exec python() & " " & quoteShell(repoDir / "tools/webcheck.py") & " " & quoteShell(webOut()) &
