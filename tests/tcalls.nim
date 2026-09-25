@@ -73,6 +73,15 @@ doAssert newScene().pick(0.0, 0.0).handle is Handle
 doAssert getMouseState().left is ButtonState
 doAssert compiles(getMouseState().left == ButtonState.Pressed)
 
+# gamepads: buttons and axes are enums, a button's state a ButtonState
+doAssert getGamepadButton(0, GamepadButton.South) is ButtonState
+doAssert getGamepadAxis(0, GamepadAxis.LeftX) is float
+doAssert getGamepadName(0) is string
+doAssert compiles(isGamepadButtonPressed(0, GamepadButton.Start))
+doAssert not compiles(getGamepadButton(0, 0))                    # a number is not a button
+doAssert not compiles(getGamepadAxis(0, GamepadButton.South))    # nor a button an axis
+doAssert MaxGamepads == 4
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)
@@ -82,6 +91,7 @@ proc discardable() {.used.} =
   s.setFacing(SpriteFacing.Free)
   e3.setRate(30.0)
   e2.burst(300)
+  setGamepadDeadzone(0.2)
 doAssert compiles(discardable())
 
 echo "tcalls: ok"

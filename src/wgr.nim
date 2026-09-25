@@ -122,6 +122,18 @@ type
     LeftAlt = 342, LeftSuper = 343, RightShift = 344, RightControl = 345, RightAlt = 346,
     RightSuper = 347
 
+  GamepadButton* {.pure.} = enum
+    ## a pad's buttons, named by position (South is A on Xbox, Cross on PlayStation)
+    South, East, West, North, LeftBumper, RightBumper, LeftTrigger, RightTrigger,
+    Back   ## view / select / share / minus
+    Start  ## menu / options / plus
+    Guide  ## the logo button
+    LeftStick, RightStick, DpadUp, DpadDown, DpadLeft, DpadRight
+
+  GamepadAxis* {.pure.} = enum
+    ## sticks -1 .. 1 with y down, like the screen; triggers 0 .. 1
+    LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger
+
   KeyboardState* = object
     ## every key at once, plus this frame's pressed keys and chars; for one key,
     ## `getKey` / `isKeyPressed` are simpler
@@ -132,6 +144,7 @@ type
   FrameCallback* = proc (dt, tickFraction: float) {.closure.}
 
 const
+  MaxGamepads* = 4 ## pads at once, each keeping its slot (0 .. 3) while connected
   ColorLightgray* = WGR_COLOR_LIGHTGRAY
   ColorGray* = WGR_COLOR_GRAY
   ColorDarkgray* = WGR_COLOR_DARKGRAY
@@ -262,6 +275,30 @@ typedef char wgr_nim_Key_RightShift_is_out_of_date_with_wgr_keys_h[(WGR_KEY_RIGH
 typedef char wgr_nim_Key_RightControl_is_out_of_date_with_wgr_keys_h[(WGR_KEY_RIGHT_CONTROL == 345) ? 1 : -1];
 typedef char wgr_nim_Key_RightAlt_is_out_of_date_with_wgr_keys_h[(WGR_KEY_RIGHT_ALT == 346) ? 1 : -1];
 typedef char wgr_nim_Key_RightSuper_is_out_of_date_with_wgr_keys_h[(WGR_KEY_RIGHT_SUPER == 347) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_South_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_SOUTH == 0) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_East_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_EAST == 1) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_West_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_WEST == 2) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_North_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_NORTH == 3) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_LeftBumper_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_LEFT_BUMPER == 4) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_RightBumper_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_RIGHT_BUMPER == 5) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_LeftTrigger_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_LEFT_TRIGGER == 6) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_RightTrigger_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_RIGHT_TRIGGER == 7) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_Back_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_BACK == 8) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_Start_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_START == 9) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_Guide_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_GUIDE == 10) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_LeftStick_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_LEFT_STICK == 11) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_RightStick_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_RIGHT_STICK == 12) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_DpadUp_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_DPAD_UP == 13) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_DpadDown_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_DPAD_DOWN == 14) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_DpadLeft_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_DPAD_LEFT == 15) ? 1 : -1];
+typedef char wgr_nim_GamepadButton_DpadRight_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_BUTTON_DPAD_RIGHT == 16) ? 1 : -1];
+typedef char wgr_nim_GamepadAxis_LeftX_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_LEFT_X == 0) ? 1 : -1];
+typedef char wgr_nim_GamepadAxis_LeftY_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_LEFT_Y == 1) ? 1 : -1];
+typedef char wgr_nim_GamepadAxis_RightX_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_RIGHT_X == 2) ? 1 : -1];
+typedef char wgr_nim_GamepadAxis_RightY_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_RIGHT_Y == 3) ? 1 : -1];
+typedef char wgr_nim_GamepadAxis_LeftTrigger_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_LEFT_TRIGGER == 4) ? 1 : -1];
+typedef char wgr_nim_GamepadAxis_RightTrigger_is_out_of_date_with_wgr_input_h[(WGR_GAMEPAD_AXIS_RIGHT_TRIGGER == 5) ? 1 : -1];
+typedef char wgr_nim_MaxGamepads_is_out_of_date_with_wgr_input_h[(WGR_INPUT_MAX_GAMEPADS == 4) ? 1 : -1];
 """.}
 
 proc toNim(v: CVec2): Vec2 = (v.x.float, v.y.float)
@@ -673,6 +710,32 @@ proc isKeyDown*(key: Key): bool =
 proc isKeyReleased*(key: Key): bool =
   ## went up this frame
   getKey(key) == ButtonState.Released
+
+# --- gamepads ---
+# A pad keeps its slot (0 ..< MaxGamepads) while it's connected. On the web the browser
+# lists one only after a button on it is pressed with the page focused.
+
+proc isGamepadConnected*(pad: int): bool = wgr_input_is_gamepad_connected(pad.cint)
+proc getGamepadName*(pad: int): string =
+  ## "" when none is connected there
+  $wgr_input_get_gamepad_name(pad.cint)
+proc getGamepadButton*(pad: int; button: GamepadButton): ButtonState =
+  ButtonState(wgr_input_get_gamepad_button(pad.cint, ord(button).cint))
+proc isGamepadButtonPressed*(pad: int; button: GamepadButton): bool =
+  ## went down this frame
+  getGamepadButton(pad, button) == ButtonState.Pressed
+proc isGamepadButtonDown*(pad: int; button: GamepadButton): bool =
+  ## held, including the frame it went down
+  getGamepadButton(pad, button) in {ButtonState.Pressed, ButtonState.Down}
+proc isGamepadButtonReleased*(pad: int; button: GamepadButton): bool =
+  ## went up this frame
+  getGamepadButton(pad, button) == ButtonState.Released
+proc getGamepadAxis*(pad: int; axis: GamepadAxis): float =
+  ## sticks -1 .. 1 (y down), triggers 0 .. 1, after the dead zone
+  wgr_input_get_gamepad_axis(pad.cint, ord(axis).cint).float
+proc setGamepadDeadzone*(radius: float): bool {.discardable.} =
+  ## how far a stick moves before it reads other than 0
+  wgr_input_set_gamepad_deadzone(radius.cfloat)
 
 proc getKeyboardState*(): KeyboardState = KeyboardState(c: wgr_input_get_keyboard_state())
 
