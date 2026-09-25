@@ -90,6 +90,24 @@ doAssert compiles(drawRoundedRectangle(0, 0, 10, 10, 2, ColorWhite))
 doAssert compiles(drawBorder(0, 0, 10, 10, 1, 1, 1, 1, color = ColorWhite))
 doAssert not compiles(drawCircle(10.0, 20.0, 5.0, ColorGold))    # a center is a point
 
+# 2D sprites, 3D shapes, textures, the window, the tick
+let sp = Sprite2d(0)
+let sh = Shape3d(0)
+doAssert newSprite2d(Texture(0)) is Sprite2d
+doAssert compiles(sp.setPosition((1.0, 2.0)))
+doAssert not compiles(sp.setPosition(v))                     # a 2D sprite takes a Vec2
+doAssert compiles(newScene().add(sp))
+doAssert compiles(newScene().add(sh))
+doAssert compiles(drawCube((0.0, 1.0, 0.0), (2.0, 2.0, 2.0), ColorSkyblue))
+doAssert compiles(drawLine(v, v, ColorRed))                   # 3D, beside drawLine's 2D form
+doAssert Texture(0).getSize() is Vec2
+doAssert compiles(Texture(0).setSampling(TextureWrap.Repeat, TextureWrap.Repeat, TextureFilter.Nearest))
+doAssert compiles(Texture(0).draw((0.0, 0.0, 16.0, 16.0), (10.0, 10.0, 64.0, 64.0)))
+doAssert getWindowPosition() is Vec2
+doAssert getMonitorName(0) is string
+doAssert compiles(setTick(proc (dt: float) = discard, 60))
+doAssert getTime() is float
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)

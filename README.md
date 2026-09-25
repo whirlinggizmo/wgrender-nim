@@ -18,6 +18,8 @@ examples/simple/         the port of wgrender's examples/simple.c (src/simple.ni
 examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c
 examples/particles/      the port of wgrender's examples/particles.c: 3D and 2D emitters
 examples/gamepad/        the port of wgrender's examples/gamepad.c: every connected pad, live
+examples/hello/, hello3d/, tick/, window/, textures/
+                         ports of wgrender's examples of those names
                          (every example builds with the same config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
@@ -67,7 +69,7 @@ CI runs both, with `tcalls` and both examples, whenever the submodule moves.
 
 ```sh
 git clone --recursive https://github.com/whirlinggizmo/wgrender-nim.git
-cd wgrender-nim/examples/simple     # or examples/stress, particles, gamepad
+cd wgrender-nim/examples/simple     # or any other in examples/
 nim build desktop        # out/linux/release/simple (out/windows/mingw/, out/macos/release/)
 nim build web            # out/web/webgl2/: simple.js + simple.wasm, wgrender's page shell
 nim serve                # http://localhost:8000/

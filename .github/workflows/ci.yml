@@ -68,10 +68,9 @@ jobs:
 
       - name: Every example, desktop (wgrender compiled in, from its build.json)
         run: |
-          cd examples/simple && nim build desktop
-          cd ../stress && nim build desktop
-          cd ../particles && nim build desktop
-          cd ../gamepad && nim build desktop
+          for example in examples/*/; do
+            (cd "$example" && nim build desktop)
+          done
 
       - name: How calls are written, and what doesn't compile
         run: cd tests && nim c -r tcalls.nim

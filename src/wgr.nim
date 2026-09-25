@@ -43,16 +43,20 @@ type
   Scene* = distinct Handle
   Emitter3d* = distinct Handle ## particles in the 3D world
   Emitter2d* = distinct Handle ## particles on the screen, in pixels
+  Sprite2d* = distinct Handle  ## a texture on the screen, in pixels
+  Shape3d* = distinct Handle   ## a cube, sphere, rectangle, circle or line in the world
   AssetTask* = distinct Handle
 
-  AnyHandle* = Audio | Mesh | Texture | Font | Sound | Model | Sprite3d |
-               Camera3d | Light | Scene | Emitter3d | Emitter2d | AssetTask
-  SceneMember* = Model | Sprite3d | Light | Emitter3d | Emitter2d ## what a scene's add takes
+  AnyHandle* = Audio | Mesh | Texture | Font | Sound | Model | Sprite3d | Sprite2d |
+               Shape3d | Camera3d | Light | Scene | Emitter3d | Emitter2d | AssetTask
+  SceneMember* = Model | Sprite3d | Sprite2d | Shape3d | Light | Emitter3d | Emitter2d
+    ## what a scene's add takes
   Emitter* = Emitter3d | Emitter2d
 
 
   Vec2* = tuple[x, y: float]
   Vec3* = tuple[x, y, z: float]
+  Rect* = tuple[x, y, width, height: float] ## a region: of a texture in its pixels, or of the screen
 
   MouseState* = object
     x*, y*: int
@@ -92,6 +96,15 @@ type
     Mask   ## fully opaque or fully transparent, split at a cutoff; depth written
     Blend  ## alpha blended, back to front
     Add    ## added to what's behind (glows, sparks); not sorted, no depth write
+
+  TextureWrap* {.pure.} = enum
+    Repeat ## tile
+    Clamp  ## stretch the edge texels
+    Mirror ## tile, flipping every other copy
+
+  TextureFilter* {.pure.} = enum
+    Linear  ## smooth; blends mipmap levels when minified
+    Nearest ## sharp texels (pixel art)
 
   SpriteFacing* {.pure.} = enum
     Camera       ## parallel to the view plane
@@ -142,6 +155,7 @@ type
   AssetCallback* = proc (path: string) {.closure.}
   InitCallback* = proc () {.closure.}
   FrameCallback* = proc (dt, tickFraction: float) {.closure.}
+  TickCallback* = proc (dt: float) {.closure.}
 
 const
   MaxGamepads* = 4 ## pads at once, each keeping its slot (0 .. 3) while connected
@@ -329,6 +343,19 @@ proc setFrame*(cb: FrameCallback) =
   frameCallback = cb
   wgr_set_frame(frameTrampoline, nil)
 
+var tickCallback: TickCallback
+
+proc tickTrampoline(dt: cfloat; user: pointer) {.cdecl.} =
+  if tickCallback != nil: tickCallback(dt.float)
+
+proc setTick*(cb: TickCallback; hz: int) =
+  ## a fixed-rate simulation step, `hz` times a second of real time, apart from the
+  ## frames; the frame's tickFraction says how far it is between the last two ticks
+  tickCallback = cb
+  wgr_set_tick(tickTrampoline, nil, hz.cint)
+
+proc getTime*(): float = wgr_get_time().float ## seconds since the program started
+
 proc run*(): int {.discardable.} = wgr_run().int
 proc requestQuit*() = wgr_request_quit() ## close the window / end the loop
 proc getPlatform*(): string = $wgr_get_platform()
@@ -439,6 +466,32 @@ proc animate*(model: Model; dt: float): bool {.discardable.} = wgr_model_animate
 
 proc newTexture*(path: string): Texture = Texture(wgr_texture_create(path.cstring))
 proc release*(texture: Texture) = wgr_texture_release(texture.raw)
+proc newTextureTarget*(width, height: int): Texture =
+  ## a texture to render into (a scene's target)
+  Texture(wgr_texture_create_target(width.cint, height.cint))
+proc getDefaultTexture*(): Texture = Texture(wgr_texture_get_default()) ## plain white
+proc getPlaceholderTexture*(): Texture =
+  ## what stands in for a texture that couldn't be loaded
+  Texture(wgr_texture_get_placeholder())
+proc setPlaceholderTexture*(texture: Texture): bool {.discardable.} =
+  wgr_texture_set_placeholder(texture.raw)
+proc setSampling*(texture: Texture; wrapU, wrapV: TextureWrap; filter: TextureFilter): bool {.discardable.} =
+  ## how it's sampled where it's drawn directly (sprites, draw); default Clamp, Linear
+  wgr_texture_set_sampling(texture.raw, ord(wrapU).cint, ord(wrapV).cint, ord(filter).cint)
+proc getSize*(texture: Texture): Vec2 = wgr_texture_get_size(texture.raw).toNim
+proc draw*(texture: Texture; x, y, width, height: float; tint = ColorWhite) =
+  ## the whole texture into that rectangle of the screen
+  wgr_texture_draw(texture.raw, x.cfloat, y.cfloat, width.cfloat, height.cfloat, tint)
+proc draw*(texture: Texture; source, target: Rect; tint = ColorWhite) =
+  ## a region of the texture (its pixels) into a rectangle of the screen
+  wgr_texture_draw_ex(texture.raw, source.x, source.y, source.width, source.height,
+                     target.x, target.y, target.width, target.height, tint)
+proc drawNineSlice*(texture: Texture; source: Rect; left, top, right, bottom: float;
+                    target: Rect; tint = ColorWhite) =
+  ## the source's corners kept, its edges and middle stretched to fill the target
+  wgr_texture_draw_nine_slice(texture.raw, source.x, source.y, source.width, source.height,
+                             left, top, right, bottom, target.x, target.y, target.width,
+                             target.height, tint)
 proc newSprite3d*(texture: Texture): Sprite3d = Sprite3d(wgr_sprite3d_create(texture.raw))
 proc setFacing*(sprite: Sprite3d; facing: SpriteFacing): bool {.discardable.} =
   wgr_sprite3d_set_facing(sprite.raw, ord(facing).cint)
@@ -482,6 +535,9 @@ proc drawText*(font: Font; text: string; x, y, size: float; color: Color) =
   wgr_text_draw_ex(font.raw, text.cstring, x.cfloat, y.cfloat, size.cfloat, color)
 proc measureText*(font: Font; text: string; size: float): Vec2 =
   wgr_text_measure_ex(font.raw, text.cstring, size.cfloat).toNim
+proc drawFps*(x, y: int) =
+  ## in the built-in font
+  wgr_text_draw_fps(x.cint, y.cint)
 proc drawFps*(font: Font; x, y, size: float; color: Color) =
   ## font none: the built-in font
   wgr_text_draw_fps_ex(font.raw, x.cfloat, y.cfloat, size.cfloat, color)
@@ -494,6 +550,26 @@ proc setView*(camera: Camera3d; position, target: Vec3;
               up: Vec3 = (0.0, 1.0, 0.0)): bool {.discardable.} =
   wgr_camera3d_set_view(camera.raw, position.x, position.y, position.z,
                        target.x, target.y, target.z, up.x, up.y, up.z)
+proc destroy*(camera: Camera3d) = wgr_camera3d_destroy(camera.raw)
+proc getDefaultCamera3d*(): Camera3d =
+  ## the one drawing uses when none is set active: at (0, 0, 10) looking at the origin
+  Camera3d(wgr_camera3d_get_default())
+proc setActive*(camera: Camera3d): bool {.discardable.} =
+  ## what immediate 3D drawing (beginMode3d) goes through
+  wgr_camera3d_set_active(camera.raw)
+proc getActiveCamera3d*(): Camera3d = Camera3d(wgr_camera3d_get_active())
+proc setProjection*(camera: Camera3d; projection: Projection): bool {.discardable.} =
+  wgr_camera3d_set_projection(camera.raw, ord(projection).cint)
+proc getProjection*(camera: Camera3d): Projection = Projection(wgr_camera3d_get_projection(camera.raw))
+proc setFov*(camera: Camera3d; fov: float): bool {.discardable.} =
+  ## the perspective's vertical field of view, radians (default pi/4)
+  wgr_camera3d_set_fov(camera.raw, fov.cfloat)
+proc getFov*(camera: Camera3d): float = wgr_camera3d_get_fov(camera.raw).float
+proc setOrthoHeight*(camera: Camera3d; height: float): bool {.discardable.} =
+  ## how much of the world an orthographic view shows top to bottom (default 10)
+  wgr_camera3d_set_ortho_height(camera.raw, height.cfloat)
+proc getOrthoHeight*(camera: Camera3d): float = wgr_camera3d_get_ortho_height(camera.raw).float
+
 proc newLight*(kind: LightKind): Light = Light(wgr_light_create(ord(kind).cint))
 proc setDirection*(light: Light; direction: Vec3): bool {.discardable.} =
   wgr_light_set_direction(light.raw, direction.x, direction.y, direction.z)
@@ -708,6 +784,154 @@ proc drawCircleLines*(center: Vec2; radius: float; color: Color) =
   wgr_shape2d_draw_circle_lines(center.x, center.y, radius.cfloat, color)
 proc drawTriangle*(a, b, c: Vec2; color: Color) =
   wgr_shape2d_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y, color)
+
+# --- window (wgr_window.h) ---
+# On the web the canvas is the window: resizing works, moving and other monitors don't.
+# Calls a platform can't do return false.
+
+proc setWindowTitle*(title: string) = wgr_window_set_title(title.cstring)
+proc isCloseRequested*(): bool = wgr_window_close_requested() != 0 ## the user asked to close it
+proc setWindowSize*(width, height: int): bool {.discardable.} =
+  wgr_window_set_size(width.cint, height.cint)
+proc setWindowPosition*(x, y: int): bool {.discardable.} = wgr_window_set_position(x.cint, y.cint)
+proc getWindowPosition*(): Vec2 = wgr_window_get_position().toNim
+proc hasFullscreen*(): bool = wgr_window_has_fullscreen() ## whether this platform can
+proc requestFullscreen*(fullscreen: bool): bool {.discardable.} =
+  ## a request: isFullscreen answers on a later frame
+  wgr_window_request_fullscreen(fullscreen)
+proc isFullscreen*(): bool = wgr_window_is_fullscreen()
+proc setWindowVisible*(visible: bool): bool {.discardable.} =
+  ## a hidden window keeps running
+  wgr_window_set_visible(visible)
+proc isWindowVisible*(): bool = wgr_window_is_visible()
+proc isWindowFocused*(): bool = wgr_window_is_focused()
+proc getMonitorCount*(): int = wgr_window_get_monitor_count().int
+proc getMonitor*(): int = wgr_window_get_monitor().int ## the one the window is on
+proc setMonitor*(monitor: int): bool {.discardable.} = wgr_window_set_monitor(monitor.cint)
+proc getMonitorSize*(monitor: int): Vec2 = wgr_window_get_monitor_size(monitor.cint).toNim
+proc getMonitorPosition*(monitor: int): Vec2 = wgr_window_get_monitor_position(monitor.cint).toNim
+proc getMonitorName*(monitor: int): string = $wgr_window_get_monitor_name(monitor.cint)
+
+# --- 2D sprites (wgr_sprite2d.h) ---
+# A texture on the screen, in pixels: drawn directly (draw) or as a scene member,
+# over the 3D, in layer then insertion order.
+
+proc newSprite2d*(texture: Texture): Sprite2d = Sprite2d(wgr_sprite2d_create(texture.raw))
+proc destroy*(sprite: Sprite2d) = wgr_sprite2d_destroy(sprite.raw)
+proc setTexture*(sprite: Sprite2d; texture: Texture): bool {.discardable.} =
+  wgr_sprite2d_set_texture(sprite.raw, texture.raw)
+proc setSource*(sprite: Sprite2d; x, y, width, height: float): bool {.discardable.} =
+  ## the region of the texture it shows, in texture pixels
+  wgr_sprite2d_set_source(sprite.raw, x.cfloat, y.cfloat, width.cfloat, height.cfloat)
+proc setTransform*(sprite: Sprite2d; position: Vec2; rotation: float; scale: Vec2): bool {.discardable.} =
+  ## position, rotation (radians, around the pivot) and scale in one call
+  wgr_sprite2d_set_transform(sprite.raw, position.x, position.y, rotation, scale.x, scale.y)
+proc setPosition*(sprite: Sprite2d; value: Vec2): bool {.discardable.} =
+  ## where the pivot goes
+  wgr_sprite2d_set_position(sprite.raw, value.x, value.y)
+proc setPosition*(sprite: Sprite2d; x, y: float): bool {.discardable.} =
+  wgr_sprite2d_set_position(sprite.raw, x, y)
+proc setRotation*(sprite: Sprite2d; angle: float): bool {.discardable.} =
+  ## radians, around the pivot
+  wgr_sprite2d_set_rotation(sprite.raw, angle.cfloat)
+proc setScale*(sprite: Sprite2d; value: Vec2): bool {.discardable.} =
+  wgr_sprite2d_set_scale(sprite.raw, value.x, value.y)
+proc setScale*(sprite: Sprite2d; x, y: float): bool {.discardable.} =
+  wgr_sprite2d_set_scale(sprite.raw, x, y)
+proc getPosition*(sprite: Sprite2d): Vec2 = wgr_sprite2d_get_position(sprite.raw).toNim
+proc getRotation*(sprite: Sprite2d): float = wgr_sprite2d_get_rotation(sprite.raw).float
+proc getScale*(sprite: Sprite2d): Vec2 = wgr_sprite2d_get_scale(sprite.raw).toNim
+proc setSize*(sprite: Sprite2d; width, height: float): bool {.discardable.} =
+  ## drawn at this size, in pixels (default the source's)
+  wgr_sprite2d_set_size(sprite.raw, width.cfloat, height.cfloat)
+proc setPivot*(sprite: Sprite2d; x, y: float): bool {.discardable.} =
+  ## the point the position refers to, as a fraction of its size (0.5, 0.5: the middle)
+  wgr_sprite2d_set_pivot(sprite.raw, x.cfloat, y.cfloat)
+proc setNineSlice*(sprite: Sprite2d; left, top, right, bottom: float): bool {.discardable.} =
+  ## the source's borders kept at their size when it's drawn larger (0s: off)
+  wgr_sprite2d_set_nine_slice(sprite.raw, left.cfloat, top.cfloat, right.cfloat, bottom.cfloat)
+proc setTint*(sprite: Sprite2d; color: Color): bool {.discardable.} = wgr_sprite2d_set_tint(sprite.raw, color)
+proc setVisible*(sprite: Sprite2d; visible: bool): bool {.discardable.} =
+  wgr_sprite2d_set_visible(sprite.raw, visible)
+proc isVisible*(sprite: Sprite2d): bool = wgr_sprite2d_is_visible(sprite.raw)
+proc setPickable*(sprite: Sprite2d; pickable: bool): bool {.discardable.} =
+  wgr_sprite2d_set_pickable(sprite.raw, pickable)
+proc isPickable*(sprite: Sprite2d): bool = wgr_sprite2d_is_pickable(sprite.raw)
+proc setEnabled*(sprite: Sprite2d; enabled: bool): bool {.discardable.} =
+  wgr_sprite2d_set_enabled(sprite.raw, enabled)
+proc isEnabled*(sprite: Sprite2d): bool = wgr_sprite2d_is_enabled(sprite.raw)
+proc setAlphaMode*(sprite: Sprite2d; mode: AlphaMode; cutoff = 0.0): bool {.discardable.} =
+  wgr_sprite2d_set_alpha_mode(sprite.raw, ord(mode).cint, cutoff.cfloat)
+proc getAlphaMode*(sprite: Sprite2d): AlphaMode = AlphaMode(wgr_sprite2d_get_alpha_mode(sprite.raw))
+proc setPickAlphaTest*(sprite: Sprite2d; enable: bool; threshold = 0.5): bool {.discardable.} =
+  ## picked only where its texture's alpha is above `threshold`
+  wgr_sprite2d_set_pick_alpha_test(sprite.raw, enable, threshold.cfloat)
+proc draw*(sprite: Sprite2d) = wgr_sprite2d_draw(sprite.raw) ## immediate, for one not in a scene
+
+# --- 3D shapes (wgr_shape3d.h) ---
+# Immediate: drawn between beginMode3d and endMode3d, in call order. Rotations are
+# radians. Or retained, as Shape3d objects a scene holds.
+
+proc drawLine*(start, finish: Vec3; color: Color) =
+  wgr_shape3d_draw_line(start.x, start.y, start.z, finish.x, finish.y, finish.z, color)
+proc drawCube*(center, size: Vec3; color: Color) =
+  wgr_shape3d_draw_cube(center.x, center.y, center.z, size.x, size.y, size.z, color)
+proc drawCubeWires*(center, size: Vec3; color: Color) =
+  wgr_shape3d_draw_cube_wires(center.x, center.y, center.z, size.x, size.y, size.z, color)
+proc drawSphere*(center: Vec3; radius: float; color: Color) =
+  wgr_shape3d_draw_sphere(center.x, center.y, center.z, radius.cfloat, color)
+proc drawRectangle*(center: Vec3; width, height: float; rotation: Vec3; color: Color) =
+  ## flat, facing +Z before its rotation
+  wgr_shape3d_draw_rectangle(center.x, center.y, center.z, width.cfloat, height.cfloat,
+                            rotation.x, rotation.y, rotation.z, color)
+proc drawCircle*(center: Vec3; radius: float; rotation: Vec3; color: Color) =
+  ## flat, facing +Z before its rotation
+  wgr_shape3d_draw_circle(center.x, center.y, center.z, radius.cfloat, rotation.x, rotation.y,
+                         rotation.z, color)
+
+proc newShape3d*(): Shape3d = Shape3d(wgr_shape3d_create())
+proc destroy*(shape: Shape3d) = wgr_shape3d_destroy(shape.raw)
+proc setCube*(shape: Shape3d; size: Vec3): bool {.discardable.} =
+  wgr_shape3d_set_cube(shape.raw, size.x, size.y, size.z)
+proc setSphere*(shape: Shape3d; radius: float): bool {.discardable.} =
+  wgr_shape3d_set_sphere(shape.raw, radius.cfloat)
+proc setRectangle*(shape: Shape3d; width, height: float): bool {.discardable.} =
+  wgr_shape3d_set_rectangle(shape.raw, width.cfloat, height.cfloat)
+proc setCircle*(shape: Shape3d; radius: float): bool {.discardable.} =
+  wgr_shape3d_set_circle(shape.raw, radius.cfloat)
+proc setLine*(shape: Shape3d; start, finish: Vec3): bool {.discardable.} =
+  wgr_shape3d_set_line(shape.raw, start.x, start.y, start.z, finish.x, finish.y, finish.z)
+proc setLineStrip*(shape: Shape3d): bool {.discardable.} =
+  ## a line through the points addPoint adds
+  wgr_shape3d_set_line_strip(shape.raw)
+proc addPoint*(shape: Shape3d; point: Vec3): bool {.discardable.} =
+  wgr_shape3d_add_point(shape.raw, point.x, point.y, point.z)
+proc getPointCount*(shape: Shape3d): int = wgr_shape3d_get_point_count(shape.raw).int
+proc setTransform*(shape: Shape3d; position, rotation, scale: Vec3): bool {.discardable.} =
+  wgr_shape3d_set_transform(shape.raw, position.x, position.y, position.z,
+                           rotation.x, rotation.y, rotation.z, scale.x, scale.y, scale.z)
+proc setPosition*(shape: Shape3d; value: Vec3): bool {.discardable.} =
+  wgr_shape3d_set_position(shape.raw, value.x, value.y, value.z)
+proc setPosition*(shape: Shape3d; x, y, z: float): bool {.discardable.} =
+  wgr_shape3d_set_position(shape.raw, x, y, z)
+proc setRotation*(shape: Shape3d; value: Vec3): bool {.discardable.} =
+  wgr_shape3d_set_rotation(shape.raw, value.x, value.y, value.z)
+proc setScale*(shape: Shape3d; value: Vec3): bool {.discardable.} =
+  wgr_shape3d_set_scale(shape.raw, value.x, value.y, value.z)
+proc getPosition*(shape: Shape3d): Vec3 = wgr_shape3d_get_position(shape.raw).toNim
+proc getRotation*(shape: Shape3d): Vec3 = wgr_shape3d_get_rotation(shape.raw).toNim
+proc getScale*(shape: Shape3d): Vec3 = wgr_shape3d_get_scale(shape.raw).toNim
+proc setColor*(shape: Shape3d; color: Color): bool {.discardable.} = wgr_shape3d_set_color(shape.raw, color)
+proc setVisible*(shape: Shape3d; visible: bool): bool {.discardable.} =
+  wgr_shape3d_set_visible(shape.raw, visible)
+proc isVisible*(shape: Shape3d): bool = wgr_shape3d_is_visible(shape.raw)
+proc setPickable*(shape: Shape3d; pickable: bool): bool {.discardable.} =
+  wgr_shape3d_set_pickable(shape.raw, pickable)
+proc isPickable*(shape: Shape3d): bool = wgr_shape3d_is_pickable(shape.raw)
+proc setEnabled*(shape: Shape3d; enabled: bool): bool {.discardable.} =
+  wgr_shape3d_set_enabled(shape.raw, enabled)
+proc isEnabled*(shape: Shape3d): bool = wgr_shape3d_is_enabled(shape.raw)
+proc draw*(shape: Shape3d) = wgr_shape3d_draw(shape.raw) ## immediate, in 3D mode, for one not in a scene
 
 # --- debug ---
 
