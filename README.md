@@ -17,12 +17,10 @@ src/wgr/raw.nim          the whole C API as is, generated from wgrender's header
 src/wgr/internal/        not the API: build.nim compiles wgrender into the program from its
                          build.json; convert.nim, handles and vectors to and from C
 tests/tcalls.nim         how the calls are written, and that a wrong handle kind doesn't compile
-examples/simple/         the port of wgrender's examples/simple.c (src/simple.nim)
-examples/stress/         the port of wgrender's benchmark scene, tools/bench/stress.c
-examples/particles/      the port of wgrender's examples/particles.c: 3D and 2D emitters
-examples/gamepad/        the port of wgrender's examples/gamepad.c: every connected pad, live
-examples/hello/, hello3d/, tick/, window/, textures/, lights/, materials/
-                         ports of wgrender's examples of those names
+tests/tevents.nim        events through a running wgrender (headless)
+examples/<name>/         a port of each of wgrender's examples/<name>.c (all but clay, which
+                         is built on the Clay C library's macros), plus stress, its benchmark
+                         scene (tools/bench/stress.c); src/<name>.nim
                          (every example builds with the same config.nims)
 project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
