@@ -49,6 +49,7 @@ proc kindName(handle: Handle): string =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
 
   g.background = rgba(24, 26, 34, 255)
   g.camera = newCamera3d(Projection.Perspective)

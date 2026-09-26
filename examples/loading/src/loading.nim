@@ -123,6 +123,7 @@ proc startLoad(sync: bool) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.background = rgba(20, 22, 28, 255)
   g.bar = rgba(0, 0, 0, 170)
   g.graphOk = rgba(90, 200, 120, 255)

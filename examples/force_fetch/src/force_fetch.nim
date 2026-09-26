@@ -45,6 +45,7 @@ proc onFailed(path: string) = logError("load failed: " & path)
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   background = rgba(18, 20, 28, 255)
 
   if getPlatform() == "web":

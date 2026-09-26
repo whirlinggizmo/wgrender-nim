@@ -30,6 +30,7 @@ proc onFailed(path: string) = logError("font load failed: " & path)
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   background = rgba(248, 248, 250, 255)
   if not ensureAssetAsync(JetbrainsPath).addTask(proc (path: string) = mono = newFont(path), onFailed):
     onFailed(JetbrainsPath)

@@ -44,6 +44,7 @@ proc onEnvironment(path: string) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.background = rgba(30, 36, 48, 255)
   g.quitAt = getTime() + 1.0 # soon enough for tools/webcheck.py to see the quit
   ensureAssetAsync("music/a_hero_is_born.mp3").addTask(onMusic)

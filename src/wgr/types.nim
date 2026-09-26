@@ -72,6 +72,13 @@ type
     ForceFetch ## re-download even if cached
     FileOnly   ## only make the file local; don't load the resource it names
 
+  AssetCacheMode* {.pure.} = enum
+    ## how a cached asset is treated on a later visit (setAssetCacheMode); the web only
+    Revalidate ## the default: used while fresh by its Cache-Control, else checked with
+               ## the host (304 keeps, 200 replaces, 4xx deletes, no answer keeps)
+    Trust      ## used without asking, however old
+    Off        ## nothing kept between visits; what earlier ones kept is left alone
+
   Projection* {.pure.} = enum
     Perspective, Orthographic
 

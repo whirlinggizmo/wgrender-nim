@@ -31,6 +31,38 @@ proc evictAsset*(path: string): bool {.discardable.} = wgr_asset_evict(path.cstr
 
 proc clearAssetCache*() = wgr_asset_clear_cache()
 
+static:
+  doAssert ord(AssetCacheMode.Revalidate) == WGR_ASSET_CACHE_REVALIDATE
+  doAssert ord(AssetCacheMode.Trust) == WGR_ASSET_CACHE_TRUST
+  doAssert ord(AssetCacheMode.Off) == WGR_ASSET_CACHE_OFF
+
+proc setAssetCacheMode*(mode: AssetCacheMode): bool {.discardable.} =
+  ## How a cached asset is treated on a later visit (AssetCacheMode); applies to every
+  ## file checked after it is set. The web only, for now: desktop uses its cache
+  ## directory as it is. False for a value that isn't one of the modes.
+  wgr_asset_set_cache_mode(ord(mode).cint)
+
+proc getAssetCacheMode*(): AssetCacheMode = AssetCacheMode(wgr_asset_get_cache_mode())
+
+const AssetManifestName* = "manifest.json"
+  ## what tools/gen_manifest.py writes in each directory: the root one, under the
+  ## asset host, is what setAssetManifest wants
+
+proc setAssetManifest*(path: string): bool {.discardable.} =
+  ## An asset manifest: a hash of each file's contents, so a cached copy whose hash
+  ## still matches is used with no request at all, and one that changed is fetched
+  ## once. `path` is the root manifest under the host (AssetManifestName); there is one
+  ## per directory (tools/gen_manifest.py). The root is asked about once per run, a
+  ## directory's manifest only when a file under it is first ensured and only if it
+  ## changed. A listed file is hashed before it is kept, and bytes that don't match
+  ## fail the load. What no manifest lists is cached as the cache mode says. On
+  ## desktop it needs a URL host and a fetcher; a directory host ignores it.
+  ##
+  ## "" for none. False for a path that isn't relative (one starting with "/" or
+  ## holding "://"), or is 512 bytes or longer. Set it after setAssetHost and before
+  ## the ensures it should cover.
+  wgr_asset_set_manifest(if path.len > 0: path.cstring else: nil)
+
 proc addAssetRedirect*(prefix, target: string): bool {.discardable.} =
   ## paths starting `prefix` are looked for under `target` first (the latest added first)
   wgr_asset_add_redirect(prefix.cstring, target.cstring)

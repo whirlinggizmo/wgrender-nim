@@ -5,7 +5,7 @@
 ## (`header: "wgr.h"`); tools/coverage.py --check checks every one against them.
 ##
 ## wgrender 0.0.1, 34 headers.
-## wgrender-headers: e5f130f62a4bc489
+## wgrender-headers: 1cebe412bf09528f
 
 import ./internal/build # compiles wgrender into the program, from its build.json
 
@@ -136,6 +136,9 @@ const
   WGR_ASSET_ADD_TASK_OK* = 0.cint
   WGR_ASSET_ADD_TASK_ERR_INVALID* = (-1).cint
   WGR_ASSET_ADD_TASK_ERR_QUEUE_FULL* = (-2).cint
+  WGR_ASSET_CACHE_REVALIDATE* = 0.cint
+  WGR_ASSET_CACHE_TRUST* = 1.cint
+  WGR_ASSET_CACHE_OFF* = 2.cint
   WGR_CAMERA3D_PERSPECTIVE* = 0.cint
   WGR_CAMERA3D_ORTHOGRAPHIC* = 1.cint
   WGR_HANDLE_KIND_NONE* = 0.cint
@@ -358,6 +361,9 @@ proc wgr_asset_set_fetcher*(fn: WgrAssetFetchFn; user_data: pointer): bool
 proc wgr_asset_fetch_done*(request: WgrHandle; ok: bool): bool
 proc wgr_asset_evict*(path: cstring): bool
 proc wgr_asset_clear_cache*()
+proc wgr_asset_set_cache_mode*(mode: cint): bool
+proc wgr_asset_get_cache_mode*(): cint
+proc wgr_asset_set_manifest*(path: cstring): bool
 proc wgr_asset_ensure_async*(path: cstring; fetch_url: cstring; flags: cuint): WgrHandle
 proc wgr_asset_add_task*(task: WgrHandle; on_success: WgrAssetCallbackFn; on_failure: WgrAssetCallbackFn; user_data: pointer): cint
 proc wgr_asset_group_create*(): WgrHandle

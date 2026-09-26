@@ -95,6 +95,7 @@ proc loadAssets() =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   setLogLevel(LogLevel.Warn)
   setTargetFps(60)
 

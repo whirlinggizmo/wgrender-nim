@@ -65,6 +65,7 @@ proc newPbr(color: Vec3; metallic, roughness: float): Material =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.background = rgba(20, 22, 28, 255)
   g.camera = newCamera3d(Projection.Perspective)
   g.camera.setView(position = (0.0, 1.6, 7.5), target = (0.0, 1.2, 0.0))

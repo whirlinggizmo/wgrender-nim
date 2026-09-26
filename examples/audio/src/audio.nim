@@ -52,6 +52,7 @@ proc load(path: string; onReady: proc (path: string)) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   background = rgba(18, 20, 28, 255)
   load(MusicPath, onMusicLoaded)
   load(ClickPath, onClickLoaded)

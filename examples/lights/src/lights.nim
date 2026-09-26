@@ -57,6 +57,7 @@ proc toggle(light: Light) = light.setEnabled(not light.isEnabled)
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.background = rgba(12, 13, 18, 255)
   g.grid = rgba(40, 42, 50, 255)
   g.camera = newCamera3d(Projection.Perspective)

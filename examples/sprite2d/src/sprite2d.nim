@@ -58,6 +58,7 @@ proc load(path: string; onReady: proc (path: string)) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(28, 30, 38, 255)
   for i, color in g.palette.mpairs: # colors are immutable, so cycle a palette
     let a = i.float / PaletteSize * 6.2831853

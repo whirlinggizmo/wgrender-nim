@@ -110,6 +110,7 @@ proc loadShader(which: ShaderKind) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(20, 22, 28, 255)
 
   g.camera = newCamera3d(Projection.Perspective)

@@ -49,6 +49,7 @@ proc newModelFor(meshPath: string): Model =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.background = rgba(30, 32, 40, 255)
   g.camera = newCamera3d(Projection.Perspective)
   g.camera.setView(position = (8.0, 8.0, 8.0), target = (0.0, 3.0, 0.0))

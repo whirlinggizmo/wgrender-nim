@@ -41,6 +41,7 @@ proc onLogoLoaded(path: string) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(20, 22, 30, 255)
   g.camera = newCamera3d(Projection.Perspective)
   g.camera.setView(position = (12.0, 7.0, 12.0), target = (0.0, 2.5, 0.0))

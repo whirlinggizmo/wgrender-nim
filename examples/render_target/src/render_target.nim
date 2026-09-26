@@ -60,6 +60,7 @@ proc createModel(x, y, z, scaleY, scale: float; material: Material): Model =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(24, 26, 34, 255)
   g.labelBg = rgba(30, 60, 140, 255)
   g.minimapBg = rgba(12, 14, 18, 255)

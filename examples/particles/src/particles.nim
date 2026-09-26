@@ -154,6 +154,7 @@ proc load(path: string; onReady: proc (texture: Texture)) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
 
   g.camera = newCamera3d(Projection.Perspective)
   g.camera.setView(position = (0.0, 6.0, 16.0), target = (0.0, 3.0, 0.0))

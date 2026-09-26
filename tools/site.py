@@ -10,7 +10,8 @@ examples are, so they share one directory the way wgrender's site does: every
 example's .js and .wasm, the page (web/index.html: its picker lists them, `simple`
 opens first, and each example links to its source), the picker's examples.json and
 the page's versions from tools/webdeploy.py, and wgrender's examples/assets beside
-them (not the benchmarks'), which the examples load as "assets", relative to the page.
+them (not the benchmarks'), which the examples load as "assets", relative to the page,
+with their manifests (tools/gen_manifest.py).
 
 The builds are WebGL2 without threads (WEB_THREADS=0): a static host such as GitHub
 Pages sends no COOP/COEP headers, and a threaded build won't start without them. The
@@ -66,6 +67,10 @@ def main():
     # and examples.json
     subprocess.run([sys.executable, ROOT / 'tools/webdeploy.py', site, ROOT / 'web/index.html'], check=True)
     shutil.copytree(wgrender / 'examples/assets', site / 'assets', ignore=shutil.ignore_patterns('bench'))
+    # the manifests the examples set (AssetManifestName): a returning visitor then
+    # fetches only the assets that changed since the last deploy
+    subprocess.run([sys.executable, str(Path(__file__).resolve().parent / 'gen_manifest.py'), str(site / 'assets')],
+                   check=True)
     size = sum(f.stat().st_size for f in site.rglob('*') if f.is_file())
     print(f'site -> {site} ({len(built)} examples: {", ".join(built)}; {size:,} bytes with assets)')
     return 0

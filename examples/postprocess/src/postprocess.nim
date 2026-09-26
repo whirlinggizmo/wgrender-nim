@@ -69,6 +69,7 @@ proc onInit() =
     (mesh: newMeshCube(0.8, 0.8, 0.8), x: 3.6, y: 0.4, r: 0.35, gr: 0.85, b: 0.5),
   ]
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
 
   g.camera = newCamera3d(Projection.Perspective)
   g.scene = newScene()

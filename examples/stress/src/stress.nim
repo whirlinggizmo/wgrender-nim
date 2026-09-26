@@ -98,6 +98,7 @@ proc update(i: int) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   setLogLevel(LogLevel.Warn)
   setTargetFps(60)
   g.rng = 2463534242'u32

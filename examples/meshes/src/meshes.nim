@@ -49,6 +49,7 @@ proc onInit() =
     (newMeshTorus(0.4, 0.15, 48, 24), 0.15, (0.9, 0.5, 0.6)),
   ]
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
 
   g.camera = newCamera3d(Projection.Perspective)
   g.scene = newScene()

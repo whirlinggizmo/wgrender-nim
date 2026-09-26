@@ -130,6 +130,7 @@ proc onTiles(path: string) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(24, 28, 38, 255)
   g.shade = rgba(18, 20, 28, 190)
   g.text = rgba(235, 238, 245, 255)

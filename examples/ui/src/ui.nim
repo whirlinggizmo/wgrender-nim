@@ -92,6 +92,7 @@ proc placeCamera() =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.theme = defaultTheme()
   g.bg = rgba(30, 34, 44, 255)
   g.highlight = rgba(255, 220, 120, 255)

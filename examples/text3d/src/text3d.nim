@@ -54,6 +54,7 @@ proc addLabel(text: string; x, y, z: float): Text3d =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(22, 24, 30, 255)
   g.grey = rgba(60, 64, 76, 255)
   g.gold = rgba(230, 180, 60, 255)

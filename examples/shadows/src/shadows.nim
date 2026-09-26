@@ -76,6 +76,7 @@ proc place(mesh: Mesh; x, y, z, r, gr, b, roughness: float): Model =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
 
   g.camera = newCamera3d(Projection.Perspective)
   g.scene = newScene()

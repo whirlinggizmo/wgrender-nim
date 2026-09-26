@@ -92,6 +92,7 @@ proc onInit() =
   var n = 0
 
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.bg = rgba(20, 22, 28, 255)
   g.bar = rgba(0, 0, 0, 150)
   g.tonemap = Tonemap.Neutral

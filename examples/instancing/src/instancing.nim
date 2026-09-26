@@ -67,6 +67,7 @@ proc setMaterials(own: bool) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   g.camera = newCamera3d(Projection.Perspective)
   g.scene = newScene()
   g.scene.setActiveCamera(g.camera)

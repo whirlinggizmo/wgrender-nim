@@ -44,6 +44,12 @@ doAssert compiles(Font(0).drawText("hi", 0.0, 0.0, 16.0, ColorBlack)) # a font o
 doAssert measureText("hi", 16) is int
 doAssert Font(0).measureText("hi", 16.0) is Vec2
 doAssert compiles(ensureAssetAsync("x").addTask(proc (p: string) = discard))
+
+# the cache mode is its enum, never a bare number; the manifest is a path
+doAssert compiles(setAssetCacheMode(AssetCacheMode.Trust))
+doAssert compiles(getAssetCacheMode() == AssetCacheMode.Revalidate)
+doAssert not compiles(setAssetCacheMode(1))
+doAssert compiles(setAssetManifest(AssetManifestName))
 doAssert compiles(setTargetFps(60))
 doAssert compiles(logWarn("careful"))
 doAssert rgba(1, 2, 3, 4) is Color

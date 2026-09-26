@@ -44,14 +44,15 @@ The web build is chosen by the environment, spelled as wgrender's own tools spel
 which `nim serve` sends; `WEB_THREADS=0` runs on any static host.
 
 `python3 tools/site.py` builds every example that way (WebGL2, `WEB_THREADS=0`) and
-gathers them on one page (`web/index.html`) with wgrender's assets, into
+gathers them on one page (`web/index.html`) with wgrender's assets and their manifests
+(`tools/gen_manifest.py`, so a returning visitor fetches only the assets that changed), into
 `out/web/webgl2-nothreads/`: what `.github/workflows/pages.yml` publishes to
 https://whirlinggizmo.github.io/wgrender-nim/. The examples load their assets from
 `assets` beside the page, so the site works at a domain root or under a path.
 
 The web tools are this repository's own: `web/index.html` (the page, with a picker and
 a link to each example's source) and `tools/serve.py`, `tools/webdeploy.py`,
-`tools/weblib.py` and `tools/webwatch.py`, taken from wgrender's. What comes from
+`tools/weblib.py`, `tools/webwatch.py` and `tools/gen_manifest.py`, taken from wgrender's. What comes from
 wgrender is the library (its headers and sources), `examples/assets`, which
 `tools/serve.py --assets` mounts at `/assets`, and for `tools/benchmarks.py` its
 benchmark harness, since the numbers are measured against its own C baseline.
@@ -84,7 +85,7 @@ python3 tools/gen_raw.py --check       # raw.nim is what the headers make (needs
 python3 tools/coverage.py --check      # raw.nim against wgrender's headers (needs clang)
 ```
 
-CI runs all three, and builds every example in examples/ on the desktop. After wgrender's API moves,
+CI runs them all, and builds every example in examples/ on the desktop. After wgrender's API moves,
 `python3 tools/gen_raw.py` regenerates `src/wgr/raw.nim`.
 
 ## Benchmarks

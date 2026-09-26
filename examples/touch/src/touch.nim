@@ -46,6 +46,7 @@ proc load(path: string; onReady: proc (path: string)) =
 proc onInit() =
   let screen = getScreenSize()
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   load(LogoPath) do (path: string):
     g.logo = newSprite2d(newTexture(path))
     g.logo.setSize(240, 240)

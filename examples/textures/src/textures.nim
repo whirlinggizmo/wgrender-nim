@@ -51,6 +51,7 @@ proc load(t, k: int) =
 
 proc onInit() =
   setAssetHost(AssetBase)
+  setAssetManifest(AssetManifestName)
   for t in 0 ..< Names.len:
     for k in 0 ..< Kinds.len:
       load(t, k)
