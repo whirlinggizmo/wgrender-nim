@@ -27,7 +27,10 @@ proc setAssetCacheDir*(dir: string): bool {.discardable.} =
   ## where downloads are kept on desktop (the web keeps them in the browser)
   wgr_asset_set_cache_dir(dir.cstring)
 
-proc evictAsset*(path: string): bool {.discardable.} = wgr_asset_evict(path.cstring) ## drop it from the cache
+proc evictAsset*(path: string): bool {.discardable.} =
+  ## drop it from the cache; false when there was none, or for a path that isn't under
+  ## the host (as ensureAssetAsync reads one)
+  wgr_asset_evict(path.cstring)
 
 proc clearAssetCache*() = wgr_asset_clear_cache()
 
@@ -64,7 +67,8 @@ proc setAssetManifest*(path: string): bool {.discardable.} =
   wgr_asset_set_manifest(if path.len > 0: path.cstring else: nil)
 
 proc addAssetRedirect*(prefix, target: string): bool {.discardable.} =
-  ## paths starting `prefix` are looked for under `target` first (the latest added first)
+  ## paths starting `prefix` are looked for under `target` first (the latest added first);
+  ## false when full, or for a prefix or path target that isn't under the host
   wgr_asset_add_redirect(prefix.cstring, target.cstring)
 
 proc clearAssetRedirects*() = wgr_asset_clear_redirects()
@@ -113,7 +117,9 @@ proc pingAssetHost*(host: string; timeoutMs: int;
   if not result: GC_unref(ping)
 
 proc ensureAssetAsync*(path: string; fetchUrl = ""; flags: set[AssetFlag] = {}): AssetTask =
-  ## A task to attach callbacks to (task.addTask); none on failure.
+  ## A task to attach callbacks to (task.addTask); none on failure. `path` stays under
+  ## the host: "\\" is "/", "." and ".." are resolved, and a path that is absolute, names
+  ## a drive, or climbs above the host is refused.
   var bits = 0'u32
   for f in flags: bits = bits or (1'u32 shl ord(f))
   AssetTask(wgr_asset_ensure_async(path.cstring,

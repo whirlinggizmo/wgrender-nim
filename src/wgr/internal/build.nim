@@ -91,10 +91,6 @@ macro compileWgrender(): untyped =
   when defined(emscripten):
     let target = manifest["web"][webDir()]
     for f in target["cflags"]: cflags.add f.getStr
-    # wgrender keeps (and exports) every public function in a web build, which an
-    # archive only pays for per object linked; compiled in, every object is linked, so
-    # let the linker drop what the program never calls (exports_internal.h)
-    cflags.add "-DWGRI_KEEP="
     for f in target["program_cflags"]: result.add pragma("passC", f.getStr)
     for f in target["ldflags"]: ldflags.add f.getStr
   else:
