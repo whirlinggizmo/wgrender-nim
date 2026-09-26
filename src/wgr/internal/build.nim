@@ -20,6 +20,11 @@
 ## <os>-release or <os>-headless (windows-mingw*, or windows-msvc* with --cc:vcc), or
 ## for the web its tools/buildweb.py (out/web/<webdir>/). Nim recompiles a {.compile.} file when it changes, not when a
 ## header it includes does, so after editing a wgrender header, build with -f.
+##
+## -d:wgrDeclarationsOnly compiles and links none of wgrender: only its wgr_* declarations.
+## For a shared library (a hot-reloaded script) loaded by a program that has wgrender
+## in it: the library's wgr_* calls resolve to the program's copy when it is loaded, so
+## the program must export them (link it with -rdynamic).
 
 import std/[json, macros, os, sequtils, strutils]
 
@@ -83,6 +88,8 @@ macro compileWgrender(): untyped =
     nnkPragma.newTree(nnkExprColonExpr.newTree(ident(name), newLit(value)))
 
   result.add pragma("passC", forCompiler("-I" & dir / "include"))
+  when defined(wgrDeclarationsOnly):
+    return
 
   var cflags, ldflags: seq[string]
   var libs: seq[string]
