@@ -21,7 +21,7 @@ const
   KomikaFontPath = "fonts/Komika/KOMIKAH_.ttf"
   CharacterPath = "models/woman_casual/woman_casual.glb"
   SpritePath = "sprites/logo/wg-logo-bw-alpha.png"
-  BgmPath = "music/ethernight_club.mp3"
+  MusicPath = "music/a_hero_is_born.mp3"
 
   ScreenWidth = 1024
   ScreenHeight = 1280
@@ -58,7 +58,7 @@ proc load(path: string; onReady: AssetCallback) =
     onFailed(path)
 
 proc loadAssets() =
-  load(BgmPath) do (path: string):
+  load(MusicPath) do (path: string):
     let audio = newAudio(path)
     g.bgm = newSound(audio)
     audio.release() # the sound holds its own reference

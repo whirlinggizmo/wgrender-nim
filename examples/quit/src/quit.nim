@@ -46,7 +46,7 @@ proc onInit() =
   setAssetHost(AssetBase)
   g.background = rgba(30, 36, 48, 255)
   g.quitAt = getTime() + 1.0 # soon enough for tools/webcheck.py to see the quit
-  ensureAssetAsync("music/ethernight_club.mp3").addTask(onMusic)
+  ensureAssetAsync("music/a_hero_is_born.mp3").addTask(onMusic)
 
 proc frame(dt, tickFraction: float) =
   let keys = getKeyboardState()

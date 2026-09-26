@@ -1,7 +1,7 @@
 ## wgrender audio example, in Nim: a port of wgrender's examples/audio.c.
 ##
 ## Looping mp3 music + a one-shot ogg sound. Each file is ensured local (async), then
-## newAudio(path) makes a shared Audio resource: the 6 MB music is streamed (decoded
+## newAudio(path) makes a shared Audio resource: the music (over 1 MB) is streamed (decoded
 ## while playing), the small click is decoded up front. Sound objects play them. On
 ## desktop mixing runs on the audio device's thread, so music keeps playing through a
 ## slow frame: press S to stall one frame for 300 ms and hear it not care. On the web it
@@ -20,7 +20,7 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  MusicPath = "music/ethernight_club.mp3"
+  MusicPath = "music/a_hero_is_born.mp3"
   ClickPath = "sounds/click_004.ogg"
 
 var

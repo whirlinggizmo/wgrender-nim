@@ -19,13 +19,13 @@ const
   AssetBase {.strdefine: "wgrAssetBase".} =
     when defined(emscripten): "assets" else: "examples/assets"
 
-  MusicPath = "music/ethernight_club.mp3"
-  InvalidMusicPath = "music/ethernight_club_invalid.mp3" # intentionally invalid to demonstrate force_fetch
+  MusicPath = "music/a_hero_is_born.mp3"
+  InvalidMusicPath = "music/invalid.mp3" # intentionally invalid to demonstrate force_fetch
   # explicit source URL, used verbatim. Relative to the page, so it works on whatever
   # host serves the site and at whatever depth -- "/assets/..." would be the server
   # root, which is wrong wherever the site isn't at one (GitHub Pages serves a project
   # under /<repo>/). An absolute https://cdn.example/... URL is passed through the same way.
-  MusicForceFetchPath = "assets/music/ethernight_club.mp3"
+  MusicForceFetchPath = "assets/" & MusicPath
 
 var
   background: Color
