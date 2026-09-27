@@ -5,7 +5,7 @@
 ## (`header: "wgr.h"`); tools/coverage.py --check checks every one against them.
 ##
 ## wgrender 0.0.1, 34 headers.
-## wgrender-headers: 0d0bc096e1efe5cf
+## wgrender-headers: a4a9884e6b729dc6
 
 import ./internal/build # compiles wgrender into the program, from its build.json
 
@@ -599,6 +599,7 @@ proc wgr_shape2d_get_position*(shape: WgrHandle): CVec2
 proc wgr_shape2d_get_rotation*(shape: WgrHandle): cfloat
 proc wgr_shape2d_get_scale*(shape: WgrHandle): CVec2
 proc wgr_shape2d_set_pivot*(shape: WgrHandle; x: cfloat; y: cfloat): bool
+proc wgr_shape2d_get_pivot*(shape: WgrHandle): CVec2
 proc wgr_shape2d_set_outline*(shape: WgrHandle; thickness: cfloat): bool
 proc wgr_shape2d_set_color*(shape: WgrHandle; color: WgrColor): bool
 proc wgr_shape2d_set_visible*(shape: WgrHandle; visible: bool): bool
@@ -737,6 +738,7 @@ proc wgr_sprite2d_get_rotation*(sprite: WgrHandle): cfloat
 proc wgr_sprite2d_get_scale*(sprite: WgrHandle): CVec2
 proc wgr_sprite2d_set_size*(sprite: WgrHandle; width: cfloat; height: cfloat): bool
 proc wgr_sprite2d_set_pivot*(sprite: WgrHandle; x: cfloat; y: cfloat): bool
+proc wgr_sprite2d_get_pivot*(sprite: WgrHandle): CVec2
 proc wgr_sprite2d_set_nine_slice*(sprite: WgrHandle; left: cfloat; top: cfloat; right: cfloat; bottom: cfloat): bool
 proc wgr_sprite2d_set_tint*(sprite: WgrHandle; color: WgrColor): bool
 proc wgr_sprite2d_set_visible*(sprite: WgrHandle; visible: bool): bool
@@ -761,6 +763,7 @@ proc wgr_sprite3d_set_size*(handle: WgrHandle; size: cfloat): bool
 proc wgr_sprite3d_set_extent*(handle: WgrHandle; width: cfloat; height: cfloat): bool
 proc wgr_sprite3d_set_source*(handle: WgrHandle; x: cfloat; y: cfloat; width: cfloat; height: cfloat): bool
 proc wgr_sprite3d_set_pivot*(handle: WgrHandle; x: cfloat; y: cfloat): bool
+proc wgr_sprite3d_get_pivot*(handle: WgrHandle): CVec2
 proc wgr_sprite3d_set_facing*(handle: WgrHandle; facing: cint): bool
 proc wgr_sprite3d_get_position*(handle: WgrHandle): CVec3
 proc wgr_sprite3d_get_rotation*(handle: WgrHandle): CVec3

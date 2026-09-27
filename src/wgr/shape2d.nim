@@ -68,6 +68,8 @@ proc getScale*(shape: Shape2d): Vec2 = wgr_shape2d_get_scale(shape.cHandle).toNi
 proc setPivot*(shape: Shape2d; x, y: float): bool {.discardable.} =
   ## as a fraction of its bounds: (0, 0) top-left, (0.5, 0.5) the middle
   wgr_shape2d_set_pivot(shape.cHandle, x.cfloat, y.cfloat)
+
+proc getPivot*(shape: Shape2d): Vec2 = wgr_shape2d_get_pivot(shape.cHandle).toNim
 proc setOutline*(shape: Shape2d; thickness: float): bool {.discardable.} =
   ## drawn as an outline this thick (0: filled)
   wgr_shape2d_set_outline(shape.cHandle, thickness.cfloat)

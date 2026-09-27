@@ -63,6 +63,8 @@ proc setSource*(sprite: Sprite3d; x, y, width, height: float): bool {.discardabl
 proc setPivot*(sprite: Sprite3d; x, y: float): bool {.discardable.} =
   wgr_sprite3d_set_pivot(sprite.cHandle, x.cfloat, y.cfloat)
 
+proc getPivot*(sprite: Sprite3d): Vec2 = wgr_sprite3d_get_pivot(sprite.cHandle).toNim
+
 proc setVisible*(sprite: Sprite3d; visible: bool): bool {.discardable.} = wgr_sprite3d_set_visible(sprite.cHandle, visible)
 
 proc isVisible*(sprite: Sprite3d): bool = wgr_sprite3d_is_visible(sprite.cHandle)

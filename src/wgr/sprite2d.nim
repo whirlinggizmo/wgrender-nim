@@ -49,6 +49,8 @@ proc setPivot*(sprite: Sprite2d; x, y: float): bool {.discardable.} =
   ## the point the position refers to, as a fraction of its size (0.5, 0.5: the middle)
   wgr_sprite2d_set_pivot(sprite.cHandle, x.cfloat, y.cfloat)
 
+proc getPivot*(sprite: Sprite2d): Vec2 = wgr_sprite2d_get_pivot(sprite.cHandle).toNim
+
 proc setNineSlice*(sprite: Sprite2d; left, top, right, bottom: float): bool {.discardable.} =
   ## the source's borders kept at their size when it's drawn larger (0s: off)
   wgr_sprite2d_set_nine_slice(sprite.cHandle, left.cfloat, top.cfloat, right.cfloat, bottom.cfloat)
