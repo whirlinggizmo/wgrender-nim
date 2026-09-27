@@ -68,8 +68,10 @@ jobs:
 
       - name: Every example, desktop (wgrender compiled in, from its build.json)
         run: |
-          for example in examples/*/; do
-            (cd "$example" && nim build desktop)
+          # an example is a directory with a config.nims (tools/site.py's rule too), so
+          # examples/shared, the code they share, isn't built on its own
+          for config in examples/*/config.nims; do
+            (cd "$(dirname "$config")" && nim build desktop)
           done
 
       - name: How calls are written, and what doesn't compile
