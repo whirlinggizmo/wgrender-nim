@@ -135,7 +135,7 @@ proc onInit() =
   g.note = newText2d()
   g.note.setText("Every click fills the bar. The list below is clipped to the panel: " &
                  "scroll it with the wheel.")
-  g.note.setSize(14)
+  g.note.setFontSize(14)
   g.note.setMaxWidth(220)
   g.note.setPosition(30, 352)
   g.note.setColor(g.theme.textDisabled)

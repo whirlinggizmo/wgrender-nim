@@ -46,7 +46,7 @@ proc load(path: string; onReady: proc (path: string)) =
 proc addLabel(text: string; x, y, z: float): Text3d =
   let label = newText3d() # font attached when it loads
   label.setText(text)
-  label.setSize(0.35)
+  label.setFontSize(0.35)
   label.setTransform((x, y, z), (0.0, 0.0, 0.0))
   label.setColor(ColorRaywhite)
   g.scene.add(label)
@@ -107,7 +107,7 @@ proc onInit() =
 
   g.sign = newText3d() # Free facing: oriented by its rotation, like a sign
   g.sign.setText("wgrender text3d (Nim)")
-  g.sign.setSize(0.6)
+  g.sign.setFontSize(0.6)
   g.sign.setFacing(SpriteFacing.Free)
   g.sign.setColor(g.gold)
   g.scene.add(g.sign)

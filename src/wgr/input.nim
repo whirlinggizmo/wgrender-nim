@@ -76,8 +76,7 @@ proc isReleased*(state: KeyboardState; key: Key): bool =
 
 proc getMousePosition*(): Vec2 = wgr_input_get_mouse_position().toNim
 proc getMouseDelta*(): Vec2 = wgr_input_get_mouse_delta().toNim ## moved this frame
-proc getMouseWheel*(): float = wgr_input_get_mouse_wheel().float
-proc getMouseWheelX*(): float = wgr_input_get_mouse_wheel_x().float
+proc getMouseWheel*(): Vec2 = wgr_input_get_mouse_wheel().toNim ## y vertical, x horizontal
 proc getMouseButton*(button: MouseButton): ButtonState =
   ButtonState(wgr_input_get_mouse_button(ord(button).cint))
 proc captureCursor*() = wgr_input_capture_cursor() ## hidden and held: only its movement counts

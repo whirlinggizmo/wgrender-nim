@@ -13,9 +13,10 @@ proc newText3d*(): Text3d =
 proc destroy*(text: Text3d) = wgr_text3d_destroy(text.cHandle)
 proc setFont*(text: Text3d; font: Font): bool {.discardable.} = wgr_text3d_set_font(text.cHandle, font.cHandle)
 proc setText*(text: Text3d; value: string): bool {.discardable.} = wgr_text3d_set_text(text.cHandle, value.cstring)
-proc setSize*(text: Text3d; size: float): bool {.discardable.} =
+proc setFontSize*(text: Text3d; size: float): bool {.discardable.} =
   ## line height, world units
-  wgr_text3d_set_size(text.cHandle, size.cfloat)
+  wgr_text3d_set_font_size(text.cHandle, size.cfloat)
+proc getFontSize*(text: Text3d): float = wgr_text3d_get_font_size(text.cHandle).float
 proc setAlign*(text: Text3d; horizontal: AlignX; vertical: AlignY): bool {.discardable.} =
   ## where the block sits relative to its position
   wgr_text3d_set_align(text.cHandle, ord(horizontal).cint, ord(vertical).cint)
@@ -43,7 +44,7 @@ proc setPickable*(text: Text3d; pickable: bool): bool {.discardable.} =
 proc isPickable*(text: Text3d): bool = wgr_text3d_is_pickable(text.cHandle)
 proc setEnabled*(text: Text3d; enabled: bool): bool {.discardable.} = wgr_text3d_set_enabled(text.cHandle, enabled)
 proc isEnabled*(text: Text3d): bool = wgr_text3d_is_enabled(text.cHandle)
-proc getSize*(text: Text3d): Vec2 =
+proc measure*(text: Text3d): Vec2 =
   ## the laid-out block's width and height, world units
-  wgr_text3d_get_size(text.cHandle).toNim
+  wgr_text3d_measure(text.cHandle).toNim
 proc draw*(text: Text3d) = wgr_text3d_draw(text.cHandle) ## immediate, in 3D mode

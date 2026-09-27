@@ -13,9 +13,10 @@ proc setPosition*(text: Text2d; value: Vec2): bool {.discardable.} =
   wgr_text2d_set_position(text.cHandle, value.x, value.y)
 proc setPosition*(text: Text2d; x, y: float): bool {.discardable.} = wgr_text2d_set_position(text.cHandle, x, y)
 proc getPosition*(text: Text2d): Vec2 = wgr_text2d_get_position(text.cHandle).toNim
-proc setSize*(text: Text2d; size: float): bool {.discardable.} =
+proc setFontSize*(text: Text2d; size: float): bool {.discardable.} =
   ## line height, pixels
-  wgr_text2d_set_size(text.cHandle, size.cfloat)
+  wgr_text2d_set_font_size(text.cHandle, size.cfloat)
+proc getFontSize*(text: Text2d): float = wgr_text2d_get_font_size(text.cHandle).float
 proc setColor*(text: Text2d; color: Color): bool {.discardable.} = wgr_text2d_set_color(text.cHandle, color)
 proc setVisible*(text: Text2d; visible: bool): bool {.discardable.} = wgr_text2d_set_visible(text.cHandle, visible)
 proc isVisible*(text: Text2d): bool = wgr_text2d_is_visible(text.cHandle)
@@ -30,6 +31,7 @@ proc setAlign*(text: Text2d; horizontal: AlignX; vertical: AlignY): bool {.disca
 proc setMaxWidth*(text: Text2d; width: float): bool {.discardable.} =
   ## wraps at this width, pixels (0: no wrapping)
   wgr_text2d_set_max_width(text.cHandle, width.cfloat)
-proc measureWidth*(text: Text2d): float = wgr_text2d_measure_width(text.cHandle).float
-proc measureHeight*(text: Text2d): float = wgr_text2d_measure_height(text.cHandle).float
+proc measure*(text: Text2d): Vec2 =
+  ## the laid-out text at its font size: x the widest line, y the lines' total height
+  wgr_text2d_measure(text.cHandle).toNim
 proc draw*(text: Text2d) = wgr_text2d_draw(text.cHandle) ## immediate, for one not in a scene

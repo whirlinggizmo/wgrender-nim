@@ -70,7 +70,7 @@ proc newButton*(scene: Scene; layer: int; text: string; x, y, width, height, tex
   # centered on the button, so the label needs no measuring
   result.label = newText2d()
   result.label.setText(text)
-  result.label.setSize(textSize)
+  result.label.setFontSize(textSize)
   result.label.setAlign(AlignX.Center, AlignY.Middle)
   result.label.setPosition(x + width * 0.5, y + height * 0.5)
   result.label.setPickable(false) # the rectangle under it takes the pointer
@@ -165,7 +165,7 @@ proc newList*(scene: Scene; rowLayer: int; names: openArray[string];
 
     let label = newText2d()
     label.setText(name)
-    label.setSize(textSize)
+    label.setFontSize(textSize)
     label.setAlign(AlignX.Left, AlignY.Middle)
     label.setPickable(false)
     scene.add(label, rowLayer + 1)

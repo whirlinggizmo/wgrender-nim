@@ -5,7 +5,7 @@
 ## (`header: "wgr.h"`); tools/coverage.py --check checks every one against them.
 ##
 ## wgrender 0.0.1, 34 headers.
-## wgrender-headers: a4a9884e6b729dc6
+## wgrender-headers: 2ec0df5270742d53
 
 import ./internal/build # compiles wgrender into the program, from its build.json
 
@@ -412,8 +412,7 @@ proc wgr_input_capture_cursor*()
 proc wgr_input_release_cursor*()
 proc wgr_input_get_mouse_position*(): CVec2
 proc wgr_input_get_mouse_delta*(): CVec2
-proc wgr_input_get_mouse_wheel*(): cfloat
-proc wgr_input_get_mouse_wheel_x*(): cfloat
+proc wgr_input_get_mouse_wheel*(): CVec2
 proc wgr_input_get_mouse_button*(button: cint): cint
 proc wgr_input_get_mouse_state*(): CMouseState
 proc wgr_input_get_key*(key: cint): cint
@@ -797,7 +796,8 @@ proc wgr_text2d_set_font*(handle: WgrHandle; font: WgrHandle): bool
 proc wgr_text2d_set_text*(handle: WgrHandle; text: cstring): bool
 proc wgr_text2d_set_position*(handle: WgrHandle; x: cfloat; y: cfloat): bool
 proc wgr_text2d_get_position*(handle: WgrHandle): CVec2
-proc wgr_text2d_set_size*(handle: WgrHandle; size: cfloat): bool
+proc wgr_text2d_set_font_size*(handle: WgrHandle; size: cfloat): bool
+proc wgr_text2d_get_font_size*(handle: WgrHandle): cfloat
 proc wgr_text2d_set_color*(handle: WgrHandle; color: WgrColor): bool
 proc wgr_text2d_set_visible*(handle: WgrHandle; visible: bool): bool
 proc wgr_text2d_is_visible*(handle: WgrHandle): bool
@@ -807,15 +807,15 @@ proc wgr_text2d_set_enabled*(text: WgrHandle; enabled: bool): bool
 proc wgr_text2d_is_enabled*(text: WgrHandle): bool
 proc wgr_text2d_set_align*(handle: WgrHandle; horizontal: cint; vertical: cint): bool
 proc wgr_text2d_set_max_width*(handle: WgrHandle; width: cfloat): bool
-proc wgr_text2d_measure_width*(handle: WgrHandle): cfloat
-proc wgr_text2d_measure_height*(handle: WgrHandle): cfloat
+proc wgr_text2d_measure*(handle: WgrHandle): CVec2
 proc wgr_text2d_draw*(handle: WgrHandle)
 proc wgr_text2d_destroy*(handle: WgrHandle)
 proc wgr_text3d_create*(font: WgrHandle): WgrHandle
 proc wgr_text3d_destroy*(text: WgrHandle)
 proc wgr_text3d_set_font*(text: WgrHandle; font: WgrHandle): bool
 proc wgr_text3d_set_text*(text: WgrHandle; string: cstring): bool
-proc wgr_text3d_set_size*(text: WgrHandle; size: cfloat): bool
+proc wgr_text3d_set_font_size*(text: WgrHandle; size: cfloat): bool
+proc wgr_text3d_get_font_size*(text: WgrHandle): cfloat
 proc wgr_text3d_set_align*(text: WgrHandle; horizontal: cint; vertical: cint): bool
 proc wgr_text3d_set_max_width*(text: WgrHandle; width: cfloat): bool
 proc wgr_text3d_set_transform*(text: WgrHandle; x: cfloat; y: cfloat; z: cfloat; rotation_x: cfloat; rotation_y: cfloat; rotation_z: cfloat): bool
@@ -831,7 +831,7 @@ proc wgr_text3d_set_pickable*(text: WgrHandle; pickable: bool): bool
 proc wgr_text3d_is_pickable*(text: WgrHandle): bool
 proc wgr_text3d_set_enabled*(text: WgrHandle; enabled: bool): bool
 proc wgr_text3d_is_enabled*(text: WgrHandle): bool
-proc wgr_text3d_get_size*(text: WgrHandle): CVec2
+proc wgr_text3d_measure*(text: WgrHandle): CVec2
 proc wgr_text3d_draw*(text: WgrHandle)
 proc wgr_text_draw_3d*(font: WgrHandle; text: cstring; x: cfloat; y: cfloat; z: cfloat; size: cfloat; color: WgrColor)
 proc wgr_version_major*(): cint
