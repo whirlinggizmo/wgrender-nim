@@ -1,5 +1,16 @@
-# Build config for a wgrender example: this directory's name is the example's, and its
-# source is src/<name>.nim. Every example's config.nims is this same file.
+# Build config for every wgrender example. An example is a directory here with its source
+# at src/<name>.nim, the directory's name being the example's; Nim reads this file for
+# anything under examples/, so the examples need no config of their own.
+#
+# One that needs more -- a define, a library -- adds a config.nims of its own beside its
+# src/ (examples/<name>/config.nims) holding just that, say:
+#
+#   switch("define", "ssl")
+#
+# Nim reads it after this file, so its switches add to these (or override them), and the
+# tasks below still come from here.
+#
+# Run these from the example's directory (examples/simple, ...):
 #
 #   nim build desktop     out/<platform>/<variant>/<name>: out/linux/release/, out/windows/mingw/,
 #                         ... (wgrender compiled in, by src/wgr/internal/build.nim); with MSVC,
@@ -19,7 +30,7 @@
 # build makes in out/<platform>/<variant>/, its work in build/<platform>/<variant>/
 # (Nim's cache in build/linux/release/nimcache, build/web/webgl2/nimcache, ...).
 #
-# Run these from this directory. `nim c -r src/<name>.nim` still builds and runs the
+# `nim c -r src/<name>.nim`, from the example's directory, still builds and runs the
 # desktop version in place.
 #
 # Web options are wgrender's web build settings, read from the environment:
@@ -33,14 +44,18 @@
 import std/[os, strutils]
 
 const
-  thisDir = currentSourcePath().parentDir()
-  repoDir = thisDir / "../.."
+  repoDir = currentSourcePath().parentDir() / ".."
+  wgrenderSibling = repoDir / "../wgrender-c"
+  wgrenderSubmodule = repoDir / "project/lib/wgrender-c"
+
+# The example being built: a task (nim build) runs in its directory, and compiling
+# names its src/<name>.nim, wherever that is run from, making src/ the project's.
+let
+  thisDir = if projectDir().lastPathPart == "src": projectDir().parentDir() else: projectDir()
   name = thisDir.lastPathPart
   mainEntry = thisDir / "src" / name & ".nim"
   outDir = thisDir / "out"
   workDir = thisDir / "build"
-  wgrenderSibling = repoDir / "../wgrender-c"
-  wgrenderSubmodule = repoDir / "project/lib/wgrender-c"
 
 let wgrenderDir = absolutePath(
   if existsEnv("WGRENDER_DIR"): getEnv("WGRENDER_DIR")
@@ -136,7 +151,12 @@ proc buildWeb() =
        site.quoteShell & " " & shell.quoteShell
   echo "built " & relativePath(site, thisDir) & " — `nim serve`, then open http://localhost:8000/"
 
+proc requireExample() =
+  if not fileExists(mainEntry):
+    quit "run this from an example's directory (examples/<name>, with src/<name>.nim)", 1
+
 task build, "Build: nim build desktop|web|all":
+  requireExample()
   let target = if paramCount() >= 2: paramStr(paramCount()) else: ""
   case target
   of "desktop": buildDesktop()
@@ -148,13 +168,16 @@ task build, "Build: nim build desktop|web|all":
     quit "usage: nim build desktop|web|all", 1
 
 task serve, "Serve the web build on http://localhost:8000":
+  requireExample()
   exec python() & " " & quoteShell(repoDir / "tools/serve.py") & " 8000 " &
        quoteShell(webOut()) & " --assets " & quoteShell(wgrenderDir / "examples/assets") & " --gzip"
 
 task webcheck, "Load the web build in a headless browser; fail if it doesn't run":
+  requireExample()
   exec python() & " " & quoteShell(repoDir / "tools/webcheck.py") & " " & quoteShell(webOut()) &
        " " & quoteShell(wgrenderDir) & " " & quoteShell(workDir / webVariant() / "check.png")
 
 task clean, "Remove build outputs":
+  requireExample()
   rmDir(outDir)
   rmDir(workDir)

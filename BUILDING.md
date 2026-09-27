@@ -33,6 +33,17 @@ nim webcheck             # load the web build in a headless browser, fail if it 
 nim clean
 ```
 
+Every example builds with `examples/config.nims`: Nim reads a `config.nims` in any
+directory above the program as well as its own, so the tasks and switches there serve
+them all, and an example is just a directory with its source at `src/<name>.nim`. One
+that needs more -- a define, a library -- adds `examples/<name>/config.nims`. Nim reads it
+after the shared one, so its switches add to those or override them, and `nim build`
+and the other tasks still come from the shared file. It holds just what it adds:
+
+```nim
+switch("define", "ssl")
+```
+
 `nim c -r src/simple.nim` builds and runs the desktop version in place. With MSVC:
 `nim build --cc:vcc desktop` (into `out/windows/msvc/`), or `nim c --cc:vcc -r
 src/simple.nim`. On Windows the output and cache directories are named for the compiler:

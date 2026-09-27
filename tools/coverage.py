@@ -33,7 +33,7 @@ found from the emcc on PATH, else a clang on PATH, else under $EMSDK. The wgr mo
 wraps part of raw.nim by hand, so what it doesn't wrap yet is a count, not a failure.
 
 wgrender is WGRENDER_DIR, else a ../wgrender-c checkout beside this one, else the
-submodule, as examples/*/config.nims find it.
+submodule, as examples/config.nims finds it.
 """
 import json
 import os

@@ -34,7 +34,8 @@ WEB = {'BACKEND': 'webgl2', 'WEB_THREADS': '0', 'WEB_DEBUG': '0'}
 
 
 def examples():
-    return sorted(d for d in (ROOT / 'examples').iterdir() if (d / 'config.nims').is_file())
+    """A directory with its source at src/<name>.nim, as examples/config.nims builds them."""
+    return sorted(d for d in (ROOT / 'examples').iterdir() if (d / 'src' / f'{d.name}.nim').is_file())
 
 
 def main():

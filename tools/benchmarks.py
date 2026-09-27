@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
 
 def find_wgrender():
-    """The same order as examples/simple/config.nims."""
+    """The same order as examples/config.nims."""
     if os.environ.get('WGRENDER_DIR'):
         return pathlib.Path(os.environ['WGRENDER_DIR']).resolve(), 'WGRENDER_DIR'
     if (ROOT / '../wgrender-c/include/wgr.h').is_file():
