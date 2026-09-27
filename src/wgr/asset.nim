@@ -24,8 +24,11 @@ proc setAssetHost*(host: string) = wgr_asset_set_host(host.cstring)
 proc getAssetHost*(): string = $wgr_asset_get_host()
 
 proc setAssetCacheDir*(dir: string): bool {.discardable.} =
-  ## where downloads are kept on desktop (the web keeps them in the browser)
+  ## where downloads are kept on desktop (the web keeps them in the browser); by default
+  ## the user's cache directory, <cache>/<company>/<app> (setAppCompany, setAppName)
   wgr_asset_set_cache_dir(dir.cstring)
+
+proc getAssetCacheDir*(): string = $wgr_asset_get_cache_dir() ## "" on the web
 
 proc evictAsset*(path: string): bool {.discardable.} =
   ## drop it from the cache; false when there was none, or for a path that isn't under

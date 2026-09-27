@@ -61,6 +61,20 @@ proc requestQuit*() = wgr_request_quit() ## close the window / end the loop
 
 proc getPlatform*(): string = $wgr_get_platform()
 
+proc setAppCompany*(company: string) =
+  ## who the program is, for the directories its files go under on desktop (the asset
+  ## cache: <user's cache>/<company>/<app>). "DefaultCompany" until set, so nothing unset
+  ## looks like anyone's; made one safe path component; "" is the default again.
+  wgr_set_app_company(company.cstring)
+
+proc getAppCompany*(): string = $wgr_get_app_company()
+
+proc setAppName*(name: string) =
+  ## the app under the company: the executable's name until set; "" is that again
+  wgr_set_app_name(name.cstring)
+
+proc getAppName*(): string = $wgr_get_app_name()
+
 proc setTargetFps*(fps: int) = wgr_set_target_fps(fps.cint)
 
 proc toHandleKind(kind: cint): HandleKind =

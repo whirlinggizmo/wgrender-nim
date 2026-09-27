@@ -138,6 +138,18 @@ doAssert compiles(pushClip((0.0, 0.0, 10.0, 10.0)))
 doAssert Handle(0).getKind is HandleKind
 doAssert Model(0).getKind is HandleKind
 
+# who the program is: nothing unset looks like anyone's, and a name is one path component
+setAppCompany("")
+doAssert getAppCompany() == "DefaultCompany"
+setAppCompany("Acme/Games")
+doAssert getAppCompany() == "Acme_Games"
+setAppName("Rocket")
+doAssert getAppName() == "Rocket"
+setAppName("")
+doAssert getAppName() notin ["", "Rocket"]
+setAppCompany("")
+doAssert getAssetCacheDir() is string
+
 # bool results are discardable: a bare call, with no `discard`
 proc discardable() {.used.} =
   m.setPosition(v)

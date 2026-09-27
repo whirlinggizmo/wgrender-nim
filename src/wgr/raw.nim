@@ -5,7 +5,7 @@
 ## (`header: "wgr.h"`); tools/coverage.py --check checks every one against them.
 ##
 ## wgrender 0.0.1, 34 headers.
-## wgrender-headers: 7280084ad4c49449
+## wgrender-headers: c77445752c1e705a
 
 import ./internal/build # compiles wgrender into the program, from its build.json
 
@@ -357,6 +357,7 @@ const
 proc wgr_asset_set_host*(host: cstring)
 proc wgr_asset_get_host*(): cstring
 proc wgr_asset_set_cache_dir*(dir: cstring): bool
+proc wgr_asset_get_cache_dir*(): cstring
 proc wgr_asset_set_fetcher*(fn: WgrAssetFetchFn; user_data: pointer): bool
 proc wgr_asset_fetch_done*(request: WgrHandle; ok: bool): bool
 proc wgr_asset_evict*(path: cstring): bool
@@ -869,6 +870,10 @@ proc wgr_is_initialized*(): bool
 proc wgr_get_platform*(): cstring
 proc wgr_get_renderer*(): cstring
 proc wgr_has_threads*(): bool
+proc wgr_set_app_company*(company: cstring)
+proc wgr_get_app_company*(): cstring
+proc wgr_set_app_name*(name: cstring)
+proc wgr_get_app_name*(): cstring
 proc wgr_set_target_fps*(fps: cint)
 proc wgr_get_time*(): cdouble
 
