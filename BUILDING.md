@@ -38,10 +38,13 @@ directory above the program as well as its own, so the tasks and switches there 
 them all, and an example is just a directory with its source at `src/<name>.nim`. One
 that needs more -- a define, a library -- adds `examples/<name>/config.nims`. Nim reads it
 after the shared one, so its switches add to those or override them, and `nim build`
-and the other tasks still come from the shared file. It holds just what it adds:
+and the other tasks still come from the shared file. It holds just what it adds, as
+`examples/fetch/config.nims` does:
 
 ```nim
-switch("define", "ssl")
+when not defined(emscripten): # the browser downloads by itself
+  switch("define", "wgrIncludeFetcher") # the binding's fetcher, over std/httpclient
+  switch("define", "ssl")               # and OpenSSL for its https
 ```
 
 `nim c -r src/simple.nim` builds and runs the desktop version in place. With MSVC:

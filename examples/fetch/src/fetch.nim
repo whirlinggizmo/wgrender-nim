@@ -7,12 +7,16 @@
 ##
 ##     setAssetCacheDir("build/asset-cache")
 ##     setAssetHost("http://localhost:8000/assets")
-##     setFetcher(fetchWithCurl)
 ##
-## The fetcher here shells out to curl, so the example needs nothing built or linked. It
-## is synchronous, which is fine for a handful of small files but would hitch a frame on
-## a big one; the hook is built for the other way round: a real fetcher starts a
-## download and calls fetchDone from a later tick, and nothing blocks meanwhile.
+## Nim has one in the box, so there is nothing here to write: this example builds with
+## -d:wgrIncludeFetcher (its config.nims), and the binding installs its httpFetcher, over
+## std/httpclient, the first time an http(s) URL appears. -d:ssl gives it HTTPS, through
+## OpenSSL loaded at run time: the system's on Linux and macOS, DLLs shipped beside the
+## program on Windows. A program that wants its own fetcher still sets one (setFetcher),
+## and the binding leaves it be. httpFetcher is synchronous, which is fine for a handful
+## of small files but would hitch a frame on a big one; the hook is built for the other
+## way round: a real fetcher starts a download and calls fetchDone from a later tick,
+## and nothing blocks meanwhile.
 ##
 ## Bytes never cross the boundary: wgrender names a URL and a destination file, the
 ## fetcher writes that file. Downloads land in the cache directory and the next run
@@ -38,7 +42,7 @@
 import wgr
 import ../../shared/ui/ui_widgets
 when not defined(emscripten):
-  import std/[os, osproc]
+  import std/[httpclient, os]
 
 const
   # Where assets load from. Desktop: config.nims points this at wgrender's
@@ -71,14 +75,14 @@ when not defined(emscripten): # the browser downloads by itself
     remote: bool
     wasCached: bool # the file was in the cache before this fetch
 
-  proc fetchWithCurl(request: AssetRequest; url, destPath: string) =
-    ## Download `url` to `destPath`, then say how it went. A real one wouldn't block.
-    request.fetchDone(execCmd("curl -fsS --max-time 30 -o " & quoteShell(destPath) & " " & quoteShell(url)) == 0)
-
   proc hostIsUp(host: string): bool =
     ## Is anything serving there? Keeps the smoke test (and a forgetful human) honest.
-    ## (execCmdEx keeps curl's output, the headers, out of the terminal.)
-    execCmdEx("curl -fsS -I --max-time 2 " & quoteShell(host & "/" & TexturePath)).exitCode == 0
+    let client = newHttpClient(timeout = 2000)
+    defer: client.close()
+    try:
+      client.head(host & "/" & TexturePath).code.is2xx
+    except CatchableError:
+      false
 
 proc onLoaded(path: string) =
   let texture = newTexture(path)
@@ -129,8 +133,7 @@ proc onInit() =
     else:
       remote = hostIsUp(host)
     if remote:
-      setAssetCacheDir(CacheDir)
-      setFetcher(fetchWithCurl)
+      setAssetCacheDir(CacheDir) # the host is set below, and brings the fetcher
     else:
       host = AssetBase # local directory
   setAssetHost(host)

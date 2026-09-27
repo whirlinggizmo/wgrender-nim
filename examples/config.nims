@@ -3,9 +3,9 @@
 # anything under examples/, so the examples need no config of their own.
 #
 # One that needs more -- a define, a library -- adds a config.nims of its own beside its
-# src/ (examples/<name>/config.nims) holding just that, say:
+# src/ (examples/<name>/config.nims) holding just that, as fetch's does:
 #
-#   switch("define", "ssl")
+#   switch("define", "wgrIncludeFetcher")
 #
 # Nim reads it after this file, so its switches add to these (or override them), and the
 # tasks below still come from here.

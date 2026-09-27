@@ -1,6 +1,9 @@
 ## wgr_asset.h, wrapped.
 
-import ./types, ./internal/convert, ./raw
+import std/strutils
+import ./types, ./internal/convert, ./raw, ./logger
+when defined(wgrIncludeFetcher) and not defined(emscripten):
+  import std/[httpclient, uri]
 
 type AssetCallbacks = ref object
   onSuccess, onFailure: AssetCallback
@@ -19,7 +22,91 @@ proc assetSuccessTrampoline(path: WgrConstCstring; user: pointer) {.cdecl.} =
 proc assetFailureTrampoline(path: WgrConstCstring; user: pointer) {.cdecl.} =
   finish(user, path, false)
 
-proc setAssetHost*(host: string) = wgr_asset_set_host(host.cstring)
+var
+  assetFetcher: proc (request: AssetRequest; url, destPath: string) {.closure.}
+  fetcherInstalled, fetcherWarned: bool
+
+proc isHttp(url: string): bool =
+  ## http or https, the only URLs desktop downloads
+  let lower = url.toLowerAscii
+  lower.startsWith("http://") or lower.startsWith("https://")
+
+proc setFetcher*(fetch: proc (request: AssetRequest; url, destPath: string) {.closure.}): bool {.discardable.}
+
+proc fetchDone*(request: AssetRequest; ok: bool): bool {.discardable.} =
+  ## what a fetcher calls when it has finished, whether it worked; a later tick is fine
+  wgr_asset_fetch_done(request.cHandle, ok)
+
+when defined(wgrIncludeFetcher) and not defined(emscripten):
+  const MaxRedirects* = 20 ## how many redirects httpFetcher follows: the Fetch standard's 20
+
+  proc fetchFailed(url, at, why: string): bool =
+    logError("fetch failed: " & url & (if at != url: " (at " & at & ")" else: "") & ": " & why)
+    false
+
+  proc download(url, destPath: string): bool =
+    ## Follows 301, 302, 303, 307 and 308 as a browser's fetch does, up to MaxRedirects,
+    ## each hop http or https; anything else that isn't a 2xx fails, rather than being
+    ## saved as the asset.
+    var at = url
+    for _ in 0 .. MaxRedirects:
+      if not isHttp(at):
+        return fetchFailed(url, at, "not an http or https URL")
+      # a connection per request: a server may close one after answering, and the
+      # client would otherwise try the next hop on it
+      let client = newHttpClient(maxRedirects = 0, timeout = 30_000)
+      defer: client.close()
+      var response: Response
+      try:
+        response = client.get(at)
+      except CatchableError as e:
+        return fetchFailed(url, at, e.msg)
+      let code = response.code.int
+      if code in [301, 302, 303, 307, 308]:
+        let location = response.headers.getOrDefault("location")
+        if location.len == 0:
+          return fetchFailed(url, at, "HTTP " & $code & " with no Location")
+        at = $combine(parseUri(at), parseUri(location))
+        continue
+      if code < 200 or code >= 300:
+        return fetchFailed(url, at, "HTTP " & $code)
+      try:
+        writeFile(destPath, response.body)
+      except CatchableError as e:
+        return fetchFailed(url, at, "writing " & destPath & ": " & e.msg)
+      return true
+    fetchFailed(url, at, "more than " & $MaxRedirects & " redirects")
+
+  proc httpFetcher*(request: AssetRequest; url, destPath: string) =
+    ## A fetcher, ready to install (setFetcher(httpFetcher)), over std/httpclient; with
+    ## -d:wgrIncludeFetcher the binding installs it the first time an http(s) URL
+    ## appears. HTTPS needs -d:ssl too: OpenSSL, loaded at run time -- the system's on
+    ## Linux and macOS, DLLs shipped beside the program on Windows. Synchronous, so it
+    ## blocks the frame it runs on: fine for a handful of small files.
+    request.fetchDone(download(url, destPath))
+
+  when not defined(ssl):
+    {.warning: "wgrIncludeFetcher without -d:ssl: httpFetcher can't download https URLs".}
+
+proc needsFetcher(source: string) =
+  ## An http(s) URL on desktop needs a downloader, as wgrender links none. Every way one
+  ## reaches wgrender comes here: the host, a fetchUrl, a redirect's target. With
+  ## -d:wgrIncludeFetcher the binding installs httpFetcher the first time, unless the
+  ## program set its own (setFetcher), whichever came first. Without it nothing is
+  ## linked, and it says once what's missing, rather than the miss just failing.
+  when not defined(emscripten):
+    if fetcherInstalled or not isHttp(source): return
+    when defined(wgrIncludeFetcher):
+      setFetcher(httpFetcher)
+    else:
+      if not fetcherWarned:
+        fetcherWarned = true
+        logWarn("\"" & source & "\" is a URL and this build has no fetcher, so a miss will fail. " &
+                "Build with -d:wgrIncludeFetcher, or install one with setFetcher.")
+
+proc setAssetHost*(host: string) =
+  needsFetcher(host)
+  wgr_asset_set_host(host.cstring)
 
 proc getAssetHost*(): string = $wgr_asset_get_host()
 
@@ -73,6 +160,7 @@ proc setAssetManifest*(path: string): bool {.discardable.} =
 proc addAssetRedirect*(prefix, target: string): bool {.discardable.} =
   ## paths starting `prefix` are looked for under `target` first (the latest added first);
   ## false when full, or for a prefix or path target that isn't under the host
+  needsFetcher(target)
   wgr_asset_add_redirect(prefix.cstring, target.cstring)
 
 proc clearAssetRedirects*() = wgr_asset_clear_redirects()
@@ -89,19 +177,24 @@ proc add*(group: AssetTask; task: AssetTask): bool {.discardable.} = wgr_asset_g
 
 proc getProgress*(task: AssetTask): float = wgr_asset_get_progress(task.cHandle).float ## 0 .. 1
 
-var assetFetcher: proc (request: AssetRequest; url, destPath: string) {.closure.}
-
 proc fetchTrampoline(request: WgrHandle; url, destPath: WgrConstCstring; user: pointer) {.cdecl.} =
-  if assetFetcher != nil: assetFetcher(AssetRequest(request), $cstring(url), $cstring(destPath))
+  if assetFetcher == nil: # fail it, or the task waits for ever
+    AssetRequest(request).fetchDone(false)
+    return
+  try:
+    assetFetcher(AssetRequest(request), $cstring(url), $cstring(destPath))
+  except CatchableError as e: # not across C: the fetch just failed
+    logError("the asset fetcher for \"" & $cstring(url) & "\" raised: " & e.msg)
+    AssetRequest(request).fetchDone(false)
 
 proc setFetcher*(fetch: proc (request: AssetRequest; url, destPath: string) {.closure.}): bool {.discardable.} =
   ## desktop downloads: wgrender ships no HTTP client, so it asks this to fetch `url`
-  ## into `destPath` and call fetchDone when it has; nil goes back to none
+  ## into `destPath` and call fetchDone when it has; nil goes back to none. The program's
+  ## stays: -d:wgrIncludeFetcher's httpFetcher won't replace it, whichever came first.
   assetFetcher = fetch
+  fetcherInstalled = fetch != nil
   wgr_asset_set_fetcher(if fetch != nil: fetchTrampoline else: nil, nil)
 
-proc fetchDone*(request: AssetRequest; ok: bool): bool {.discardable.} =
-  wgr_asset_fetch_done(request.cHandle, ok)
 
 type PingCallback = ref object
   onDone: proc (host: string; milliseconds: float) {.closure.}
@@ -130,6 +223,7 @@ proc ensureAssetAsync*(path: string; fetchUrl = ""; flags: set[AssetFlag] = {}):
   ## a relative one is a file under it, read in place; anything else is refused.
   var bits = 0'u32
   for f in flags: bits = bits or (1'u32 shl ord(f))
+  needsFetcher(fetchUrl)
   AssetTask(wgr_asset_ensure_async(path.cstring,
                                   (if fetchUrl.len > 0: fetchUrl.cstring else: nil), bits))
 
