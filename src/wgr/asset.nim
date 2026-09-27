@@ -119,7 +119,11 @@ proc pingAssetHost*(host: string; timeoutMs: int;
 proc ensureAssetAsync*(path: string; fetchUrl = ""; flags: set[AssetFlag] = {}): AssetTask =
   ## A task to attach callbacks to (task.addTask); none on failure. `path` stays under
   ## the host: "\\" is "/", "." and ".." are resolved, and a path that is absolute, names
-  ## a drive, or climbs above the host is refused.
+  ## a drive, or climbs above the host is refused. `fetchUrl` changes only where the
+  ## bytes come from, and is read against the host as a browser reads a URL against a
+  ## directory, everywhere: "music/v2/a.mp3" is under it, an absolute URL used as it is.
+  ## On desktop an absolute one is http(s) (and needs a fetcher), and under a local host
+  ## a relative one is a file under it, read in place; anything else is refused.
   var bits = 0'u32
   for f in flags: bits = bits or (1'u32 shl ord(f))
   AssetTask(wgr_asset_ensure_async(path.cstring,

@@ -2,11 +2,12 @@
 ##
 ## Exercises both ensure overrides at once: `fetchUrl` (per-call source override) and
 ## AssetFlag.ForceFetch. The asset KEY is a bogus path (nothing exists at host + key, so
-## a plain ensure would just fail), while `fetchUrl` points at an explicit source URL
-## and ForceFetch bypasses the cache. On web the bytes are pulled from that URL and
-## cached under the key; on desktop (no network fetcher yet) it falls back to loading
-## the real file locally so the example still plays. Press M to toggle the looping
-## music.
+## a plain ensure would just fail), while `fetchUrl` names where the bytes really are
+## and ForceFetch bypasses the cache. It is relative, so it is read against the host as
+## a browser reads a URL against a directory -- the same call on every platform. On web
+## the bytes are downloaded and cached under the key; on desktop, whose host is a local
+## directory, the file is read where it is, under the key's name. Press M to toggle the
+## looping music.
 
 import wgr
 
@@ -21,11 +22,10 @@ const
 
   MusicPath = "music/a_hero_is_born.mp3"
   InvalidMusicPath = "music/invalid.mp3" # intentionally invalid to demonstrate force_fetch
-  # explicit source URL, used verbatim. Relative to the page, so it works on whatever
-  # host serves the site and at whatever depth -- "/assets/..." would be the server
-  # root, which is wrong wherever the site isn't at one (GitHub Pages serves a project
-  # under /<repo>/). An absolute https://cdn.example/... URL is passed through the same way.
-  MusicForceFetchPath = "assets/" & MusicPath
+  # where the bytes are, relative to the asset host: under it wherever the site is
+  # served, GitHub Pages' /<repo>/ included. An absolute https://cdn.example/... URL is
+  # used as it is.
+  MusicForceFetchPath = MusicPath
 
 var
   background: Color
@@ -48,18 +48,11 @@ proc onInit() =
   setAssetManifest(AssetManifestName)
   background = rgba(18, 20, 28, 255)
 
-  if getPlatform() == "web":
-    # Web: demonstrate fetchUrl + ForceFetch. The key (InvalidMusicPath) is a bogus
-    # path, so the bytes can only come from the explicit source URL, proving the
-    # override is honored and cached under the key.
-    ensureAssetAsync(InvalidMusicPath, MusicForceFetchPath, {AssetFlag.ForceFetch})
-      .addTask(onMusicLoaded, onFailed)
-    logInfo("force_fetch: " & InvalidMusicPath & " from " & MusicForceFetchPath)
-  else:
-    # Desktop has no network fetcher yet, so fetchUrl/ForceFetch are no-ops; load the
-    # real file from the local asset dir so the example still plays.
-    ensureAssetAsync(MusicPath).addTask(onMusicLoaded, onFailed)
-    logInfo("force_fetch is web-only; loading " & MusicPath & " locally on desktop")
+  # The key (InvalidMusicPath) is a bogus path, so the bytes can only come from the
+  # explicit source, proving the override is honored.
+  ensureAssetAsync(InvalidMusicPath, MusicForceFetchPath, {AssetFlag.ForceFetch})
+    .addTask(onMusicLoaded, onFailed)
+  logInfo("force_fetch: " & InvalidMusicPath & " from " & MusicForceFetchPath)
 
 proc frame(dt, tickFraction: float) =
   let keys = getKeyboardState()

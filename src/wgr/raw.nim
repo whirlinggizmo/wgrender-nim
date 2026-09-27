@@ -5,7 +5,7 @@
 ## (`header: "wgr.h"`); tools/coverage.py --check checks every one against them.
 ##
 ## wgrender 0.0.1, 34 headers.
-## wgrender-headers: 2ec0df5270742d53
+## wgrender-headers: 7280084ad4c49449
 
 import ./internal/build # compiles wgrender into the program, from its build.json
 
