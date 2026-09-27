@@ -66,7 +66,7 @@ jobs:
           nim-version: "2.2.12"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: The binding's dependencies (wgrender.nimble's requires: puppy, for fetch's fetcher)
+      - name: The binding's dependencies, from wgrender.nimble (puppy, for fetch's fetcher)
         # the Nim set up above, rather than a Nim package to satisfy requires "nim"
         run: nimble install -y -d --useSystemNim
 
