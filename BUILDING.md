@@ -45,7 +45,18 @@ and the other tasks still come from the shared file. It holds just what it adds,
 when not defined(emscripten): # the browser downloads by itself
   switch("define", "wgrIncludeFetcher") # the binding's fetcher, over std/httpclient
   switch("define", "ssl")               # and OpenSSL for its https
+  when defined(windows):
+    switch("define", "sslVersion=3-x64") # OpenSSL 3's DLLs, not 1.1's
 ```
+
+HTTPS through `-d:ssl` needs OpenSSL, which Nim loads when the program starts: a
+program built with it doesn't start without it. Linux and macOS have it, and the
+certificates to verify with. Windows has neither for Nim to use, so a Windows build of
+`fetch` ships `libssl-3-x64.dll`, `libcrypto-3-x64.dll` and a `cacert.pem` (curl
+publishes Mozilla's) beside the program. Git for Windows has all three: the DLLs in
+`mingw64/bin`, and `mingw64/etc/ssl/certs/ca-bundle.crt` to copy as `cacert.pem`.
+wgrender-hx needs none of this: hxcpp's TLS is linked in and reads the system's
+certificates.
 
 `nim c -r src/simple.nim` builds and runs the desktop version in place. With MSVC:
 `nim build --cc:vcc desktop` (into `out/windows/msvc/`), or `nim c --cc:vcc -r

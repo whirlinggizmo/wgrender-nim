@@ -54,13 +54,15 @@ when defined(wgrIncludeFetcher) and not defined(emscripten):
         return fetchFailed(url, at, "not an http or https URL")
       # a connection per request: a server may close one after answering, and the
       # client would otherwise try the next hop on it
-      let client = newHttpClient(maxRedirects = 0, timeout = 30_000)
-      defer: client.close()
+      var client: HttpClient
       var response: Response
-      try:
+      try: # making the client raises too: no CA certificates to verify with, say
+        client = newHttpClient(maxRedirects = 0, timeout = 30_000)
         response = client.get(at)
       except CatchableError as e:
+        if client != nil: client.close()
         return fetchFailed(url, at, e.msg)
+      client.close()
       let code = response.code.int
       if code in [301, 302, 303, 307, 308]:
         let location = response.headers.getOrDefault("location")
@@ -80,9 +82,17 @@ when defined(wgrIncludeFetcher) and not defined(emscripten):
   proc httpFetcher*(request: AssetRequest; url, destPath: string) =
     ## A fetcher, ready to install (setFetcher(httpFetcher)), over std/httpclient; with
     ## -d:wgrIncludeFetcher the binding installs it the first time an http(s) URL
-    ## appears. HTTPS needs -d:ssl too: OpenSSL, loaded at run time -- the system's on
-    ## Linux and macOS, DLLs shipped beside the program on Windows. Synchronous, so it
-    ## blocks the frame it runs on: fine for a handful of small files.
+    ## appears. Synchronous, so it blocks the frame it runs on: fine for a handful of
+    ## small files.
+    ##
+    ## HTTPS needs -d:ssl: OpenSSL, loaded when the program starts, so a program built
+    ## with it doesn't start without it, and CA certificates to verify with.
+    ## - Linux and macOS: the system's OpenSSL and certificates.
+    ## - Windows: neither comes with the system for Nim to use. Build with
+    ##   -d:sslVersion=3-x64 (Nim looks for OpenSSL 1.1's DLLs otherwise), and ship
+    ##   libssl-3-x64.dll, libcrypto-3-x64.dll and a cacert.pem (curl publishes
+    ##   Mozilla's) beside the program. Without certificates a download fails, and
+    ##   says so.
     request.fetchDone(download(url, destPath))
 
   when not defined(ssl):
