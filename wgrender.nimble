@@ -11,3 +11,6 @@ installFiles  = @["wgr.nim"]
 installDirs   = @["wgr", "project"]
 
 requires "nim >= 2.2.0"
+# httpFetcher (-d:wgrIncludeFetcher): imported only with that define, so a program
+# without it compiles and links none of it
+requires "puppy >= 2.1.2"

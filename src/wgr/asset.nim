@@ -3,7 +3,7 @@
 import std/strutils
 import ./types, ./internal/convert, ./raw, ./logger
 when defined(wgrIncludeFetcher) and not defined(emscripten):
-  import std/[httpclient, uri]
+  import puppy # a dependency of the package (wgrender.nimble), used only with this define
 
 type AssetCallbacks = ref object
   onSuccess, onFailure: AssetCallback
@@ -38,65 +38,43 @@ proc fetchDone*(request: AssetRequest; ok: bool): bool {.discardable.} =
   wgr_asset_fetch_done(request.cHandle, ok)
 
 when defined(wgrIncludeFetcher) and not defined(emscripten):
-  const MaxRedirects* = 20 ## how many redirects httpFetcher follows: the Fetch standard's 20
-
-  proc fetchFailed(url, at, why: string): bool =
-    logError("fetch failed: " & url & (if at != url: " (at " & at & ")" else: "") & ": " & why)
-    false
-
   proc download(url, destPath: string): bool =
-    ## Follows 301, 302, 303, 307 and 308 as a browser's fetch does, up to MaxRedirects,
-    ## each hop http or https; anything else that isn't a 2xx fails, rather than being
+    ## One GET through puppy, which asks the system's own HTTP: WinHTTP on Windows,
+    ## Apple's URL loading on macOS, libcurl on Linux. Each follows redirects itself, up
+    ## to 10 (wgrender-hx's limit too), and by its own rules where a browser's differ:
+    ## not from https down to http on Windows, a 300 with a Location on Linux. None
+    ## follows one to anything but http(s). Anything but a 2xx fails, rather than being
     ## saved as the asset.
-    var at = url
-    for _ in 0 .. MaxRedirects:
-      if not isHttp(at):
-        return fetchFailed(url, at, "not an http or https URL")
-      # a connection per request: a server may close one after answering, and the
-      # client would otherwise try the next hop on it
-      var client: HttpClient
-      var response: Response
-      try: # making the client raises too: no CA certificates to verify with, say
-        client = newHttpClient(maxRedirects = 0, timeout = 30_000)
-        response = client.get(at)
-      except CatchableError as e:
-        if client != nil: client.close()
-        return fetchFailed(url, at, e.msg)
-      client.close()
-      let code = response.code.int
-      if code in [301, 302, 303, 307, 308]:
-        let location = response.headers.getOrDefault("location")
-        if location.len == 0:
-          return fetchFailed(url, at, "HTTP " & $code & " with no Location")
-        at = $combine(parseUri(at), parseUri(location))
-        continue
-      if code < 200 or code >= 300:
-        return fetchFailed(url, at, "HTTP " & $code)
-      try:
-        writeFile(destPath, response.body)
-      except CatchableError as e:
-        return fetchFailed(url, at, "writing " & destPath & ": " & e.msg)
-      return true
-    fetchFailed(url, at, "more than " & $MaxRedirects & " redirects")
+    proc failed(why: string): bool =
+      logError("fetch failed: " & url & ": " & why)
+      false
+    if not isHttp(url):
+      return failed("not an http or https URL")
+    var response: Response
+    try:
+      response = puppy.get(url, timeout = 30)
+    except CatchableError as e:
+      return failed(e.msg)
+    if response.code < 200 or response.code >= 300:
+      return failed("HTTP " & $response.code)
+    try:
+      writeFile(destPath, response.body)
+    except CatchableError as e:
+      return failed("writing " & destPath & ": " & e.msg)
+    true
 
   proc httpFetcher*(request: AssetRequest; url, destPath: string) =
-    ## A fetcher, ready to install (setFetcher(httpFetcher)), over std/httpclient; with
+    ## A fetcher, ready to install (setFetcher(httpFetcher)), over puppy; with
     ## -d:wgrIncludeFetcher the binding installs it the first time an http(s) URL
     ## appears. Synchronous, so it blocks the frame it runs on: fine for a handful of
     ## small files.
     ##
-    ## HTTPS needs -d:ssl: OpenSSL, loaded when the program starts, so a program built
-    ## with it doesn't start without it, and CA certificates to verify with.
-    ## - Linux and macOS: the system's OpenSSL and certificates.
-    ## - Windows: neither comes with the system for Nim to use. Build with
-    ##   -d:sslVersion=3-x64 (Nim looks for OpenSSL 1.1's DLLs otherwise), and ship
-    ##   libssl-3-x64.dll, libcrypto-3-x64.dll and a cacert.pem (curl publishes
-    ##   Mozilla's) beside the program. Without certificates a download fails, and
-    ##   says so.
+    ## puppy comes with the binding (wgrender.nimble requires it; in a checkout,
+    ## nimble install -d), and is only compiled in with this define. It uses what the
+    ## system has, so nothing ships beside the program: WinHTTP and the system's certificates on Windows, Apple's URL loading
+    ## on macOS, and libcurl on Linux, which every desktop has (a program built with the
+    ## define won't start without it).
     request.fetchDone(download(url, destPath))
-
-  when not defined(ssl):
-    {.warning: "wgrIncludeFetcher without -d:ssl: httpFetcher can't download https URLs".}
 
 proc needsFetcher(source: string) =
   ## An http(s) URL on desktop needs a downloader, as wgrender links none. Every way one

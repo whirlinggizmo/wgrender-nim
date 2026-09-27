@@ -8,15 +8,15 @@
 ##     setAssetCacheDir("build/asset-cache")
 ##     setAssetHost("http://localhost:8000/assets")
 ##
-## Nim has one in the box, so there is nothing here to write: this example builds with
-## -d:wgrIncludeFetcher (its config.nims), and the binding installs its httpFetcher, over
-## std/httpclient, the first time an http(s) URL appears. -d:ssl gives it HTTPS, through
-## OpenSSL loaded at run time: the system's on Linux and macOS, DLLs shipped beside the
-## program on Windows. A program that wants its own fetcher still sets one (setFetcher),
-## and the binding leaves it be. httpFetcher is synchronous, which is fine for a handful
-## of small files but would hitch a frame on a big one; the hook is built for the other
-## way round: a real fetcher starts a download and calls fetchDone from a later tick,
-## and nothing blocks meanwhile.
+## So there is nothing here to write: this example builds with -d:wgrIncludeFetcher (its
+## config.nims), and the binding installs its httpFetcher the first time an http(s) URL
+## appears. That is puppy (the binding requires it), which asks the system's own HTTP --
+## WinHTTP, Apple's URL loading, libcurl -- so nothing ships beside the program, and
+## HTTPS uses the system's certificates. A program that wants its own fetcher still
+## sets one (setFetcher), and the binding leaves it be. httpFetcher is synchronous,
+## which is fine for a handful of small files but would hitch a frame on a big one; the
+## hook is built for the other way round: a real fetcher starts a download and calls
+## fetchDone from a later tick, and nothing blocks meanwhile.
 ##
 ## Bytes never cross the boundary: wgrender names a URL and a destination file, the
 ## fetcher writes that file. Downloads land in the cache directory and the next run
@@ -42,7 +42,8 @@
 import wgr
 import ../../shared/ui/ui_widgets
 when not defined(emscripten):
-  import std/[httpclient, os]
+  import std/os
+  import puppy
 
 const
   # Where assets load from. Desktop: config.nims points this at wgrender's
@@ -77,10 +78,8 @@ when not defined(emscripten): # the browser downloads by itself
 
   proc hostIsUp(host: string): bool =
     ## Is anything serving there? Keeps the smoke test (and a forgetful human) honest.
-    let client = newHttpClient(timeout = 2000)
-    defer: client.close()
     try:
-      client.head(host & "/" & TexturePath).code.is2xx
+      puppy.head(host & "/" & TexturePath, timeout = 2).code in 200 .. 299
     except CatchableError:
       false
 
