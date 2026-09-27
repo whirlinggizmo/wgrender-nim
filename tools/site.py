@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from coverage import find_wgrender  # noqa: E402
+import cli  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 VARIANT = 'webgl2-nothreads'
@@ -37,9 +38,7 @@ def examples():
 
 
 def main():
-    args = sys.argv[1:]
-    if set(args) - {'--no-build'}:
-        sys.exit(__doc__)
+    args, _ = cli.parse(__doc__, ('--no-build',))
     wgrender = find_wgrender()
     nim = shutil.which('nim') or 'nim'
     if '--no-build' not in args:

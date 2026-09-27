@@ -30,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from coverage import find_clang, find_wgrender  # noqa: E402
+import cli  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'src/wgr/raw.nim'
@@ -298,9 +299,7 @@ type
 
 
 def main():
-    args = sys.argv[1:]
-    if set(args) - {'--check'}:
-        sys.exit(__doc__)
+    args, _ = cli.parse(__doc__, ('--check',))
     wgrender = find_wgrender()
     clang = find_clang()
     if clang is None:

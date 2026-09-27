@@ -44,6 +44,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import cli
+
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / 'src/wgr/raw.nim'
 # The Nim layer: src/wgr/<header>.nim, one per wgrender header, which src/wgr.nim
@@ -367,9 +369,7 @@ def render(t):
 
 
 def main():
-    args = sys.argv[1:]
-    if set(args) - {'--check', '--list', '--require-clang'}:
-        sys.exit(__doc__)
+    args, _ = cli.parse(__doc__, ('--check', '--list', '--require-clang'))
     wgrender = find_wgrender()
     raw = parse_raw()
     procs = raw[4]
