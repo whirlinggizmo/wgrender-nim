@@ -23,7 +23,7 @@
 
 import std/[math, strformat]
 import wgr
-import ./ui_widgets
+import ../../shared/ui/ui_widgets
 
 const
   # Where assets load from. Desktop: config.nims points this at wgrender's

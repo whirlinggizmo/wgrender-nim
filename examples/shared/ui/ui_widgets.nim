@@ -1,6 +1,7 @@
-## Widgets for the ui example: buttons, a progress bar and a scrolling list, built from
+## Widgets for the examples: buttons, a progress bar and a scrolling list, built from
 ## wgrender's API (2D shapes, text2d, scene interaction) the way a game would. A port of
-## wgrender's examples/ui_widgets.h.
+## wgrender's examples/shared/ui/ui_widgets.h, shared by the examples that want a
+## button (import ../../shared/ui/ui_widgets) as the C header is.
 ##
 ## wgrender has no widget API on purpose (docs/ROADMAP.md, "GUI direction"): what a
 ## widget is (how it's themed, which one has focus, how it takes the keyboard) is
