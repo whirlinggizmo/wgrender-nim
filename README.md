@@ -63,7 +63,11 @@ constants. Rerun it when wgrender's API moves; `--check` fails if it is stale.
 `_Static_assert` per declaration against the headers (every function's parameter and
 return types, every struct field, every constant). `wgr.nim` wraps part of it by hand,
 in Nim's terms only: coverage also fails if anything it exports names a C type
-(`--list` names what isn't wrapped yet, which is in `wgr/raw`).
+(`--list` names what isn't wrapped yet, which is in `wgr/raw`), or if a C function has
+more than one exported name, or an exported proc calls more than one. Overloads share a
+name, so `newModel(mesh)` and `newModel()` are one; anything combining calls goes
+through the procs that make them. That is the rule every wgrender binding keeps
+(wgrender's AGENTS.md, "Bindings"), whatever each one's names look like.
 CI runs both, with `tcalls` and both examples, whenever the submodule moves.
 
 ## Build

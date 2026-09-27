@@ -19,6 +19,11 @@ declaration against wgrender's headers itself:
   - every function the headers declare is in raw.nim
   - nothing a wgr module exports names a C type (cstring, cint, ptr, raw's Wgr* and C*
     types, ...): a consumer of wgr sees only Nim types, and C stays in wgr/raw
+  - each C function has one exported name, and an exported proc calls one C function
+    (wgrender's AGENTS.md, "Bindings"): overloads share the name, and a generic that
+    picks its call with `when e is Emitter3d` is two overloads written once. Anything
+    that combines calls goes through the procs that make them; private plumbing, like
+    event.nim's shared on/once, is exempt
 
 It does that the way the C compiler would, because it asks it: it writes a C file of
 _Static_asserts from raw.nim's declarations (the function's type against the one
@@ -287,6 +292,36 @@ def c_types_in_wrappers(text):
     return found
 
 
+DECLARATION = re.compile(
+    r'^(?:proc|func|template|iterator|converter|macro|method|type|const|let|var)\b[ \t]*'
+    r'(`[^`]+`|\w+)?(\*?)', re.M)
+
+
+def one_name(procs):
+    """Each C function has one exported name, and an exported proc calls one C function."""
+    names = {p['name'] for p in procs}
+    by_call, problems = {}, []
+    for module in wrapper_modules():
+        code = re.sub(r'##[^\n]*|(?<!\{\.)#[^\n]*', '', module.read_text(encoding='utf-8'))
+        found = list(DECLARATION.finditer(code))
+        for i, m in enumerate(found):
+            if not m.group(1) or not m.group(2) or not m.group(0).startswith(
+                    ('proc', 'func', 'template', 'iterator', 'converter', 'macro', 'method')):
+                continue  # not exported, or not a routine
+            body = code[m.end():found[i + 1].start() if i + 1 < len(found) else len(code)]
+            calls = {c for c in re.findall(r'\b(wgr_\w+)\s*\(', body) if c in names}
+            for c in calls:
+                by_call.setdefault(c, set()).add(m.group(1))
+            if len(calls) > 1 and not re.search(r'\bwhen\s+\w+\s+is\b', body):
+                problems.append(f'{module.name}: {m.group(1)} calls {", ".join(sorted(calls))} '
+                                '-- give each its own proc and call those')
+    for c, exported in sorted(by_call.items()):
+        if len(exported) > 1:
+            problems.append(f'{c}: exported as {", ".join(sorted(exported))} -- one name, '
+                            'and the others call it')
+    return problems
+
+
 # --- the checks ----------------------------------------------------------------------
 
 def asserts(raw, functions):
@@ -345,6 +380,7 @@ def main():
     wrapped = [p for p in procs if re.search(rf'\b{p["name"]}\b', wrappers) or p['name'] in COVERED_BY]
     for module in wrapper_modules(public_only=True):
         problems += [f'{module.name}: {f}' for f in c_types_in_wrappers(module.read_text(encoding='utf-8'))]
+    problems += one_name(procs)
 
     clang = find_clang()
     if clang is None:

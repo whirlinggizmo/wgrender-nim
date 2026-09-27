@@ -82,7 +82,8 @@ for the web `tools/buildweb.py`'s `out/web/<webdir>/libwgrender.a`. The error sa
 cd tests && nim c -r tcalls.nim        # how calls are written, and what doesn't compile
 cd tests && WGR_HEADLESS_FRAMES=2 nim c -d:wgrHeadless -r tevents.nim   # events, running headless
 python3 tools/gen_raw.py --check       # raw.nim is what the headers make (needs clang)
-python3 tools/coverage.py --check      # raw.nim against wgrender's headers (needs clang)
+python3 tools/coverage.py --check      # raw.nim against wgrender's headers (needs clang),
+                                       # and one exported name per C function
 ```
 
 CI runs them all, and builds every example in examples/ on the desktop. After wgrender's API moves,
