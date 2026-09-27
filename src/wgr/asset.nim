@@ -31,8 +31,9 @@ proc setAssetCacheDir*(dir: string): bool {.discardable.} =
 proc getAssetCacheDir*(): string = $wgr_asset_get_cache_dir() ## "" on the web
 
 proc evictAsset*(path: string): bool {.discardable.} =
-  ## drop it from the cache; false when there was none, or for a path that isn't under
-  ## the host (as ensureAssetAsync reads one)
+  ## drop it from the cache -- never a local host's own file, which is only ever read;
+  ## false when there was none, or for a path that isn't under the host (as
+  ## ensureAssetAsync reads one)
   wgr_asset_evict(path.cstring)
 
 proc clearAssetCache*() = wgr_asset_clear_cache()
