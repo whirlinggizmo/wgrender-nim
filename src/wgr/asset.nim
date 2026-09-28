@@ -34,7 +34,8 @@ proc isHttp(url: string): bool =
 proc setFetcher*(fetch: proc (request: AssetRequest; url, destPath: string) {.closure.}): bool {.discardable.}
 
 proc fetchDone*(request: AssetRequest; ok: bool): bool {.discardable.} =
-  ## what a fetcher calls when it has finished, whether it worked; a later tick is fine
+  ## what a fetcher calls when it has finished, whether it worked -- from any thread:
+  ## wgrender takes the answer at its next tick; false when it can't (shut down, say)
   wgr_asset_fetch_done(request.cHandle, ok)
 
 when defined(wgrIncludeFetcher) and not defined(emscripten):
@@ -63,18 +64,50 @@ when defined(wgrIncludeFetcher) and not defined(emscripten):
       return failed("writing " & destPath & ": " & e.msg)
     true
 
+  type FetchJob = object
+    request: AssetRequest
+    url, destPath: string
+
+  proc answer(job: FetchJob) {.thread.} =
+    ## Download, and say how it went, whatever happened: a false is what makes the asset
+    ## fail rather than wait for ever.
+    {.cast(gcsafe).}:
+      var ok = false
+      try:
+        ok = download(job.url, job.destPath)
+      except CatchableError as e:
+        logError("fetch failed: " & job.url & ": " & e.msg)
+      discard job.request.fetchDone(ok)
+
+  when compileOption("threads"):
+    var fetchThreads: seq[ref Thread[FetchJob]] # joined once finished: none outlives its download
+
   proc httpFetcher*(request: AssetRequest; url, destPath: string) =
     ## A fetcher, ready to install (setFetcher(httpFetcher)), over puppy; with
     ## -d:wgrIncludeFetcher the binding installs it the first time an http(s) URL
-    ## appears. Synchronous, so it blocks the frame it runs on: fine for a handful of
-    ## small files.
+    ## appears. Each download runs on a thread of its own and answers from there, so
+    ## the frame never waits on the network: wgrender takes the answer at its next tick,
+    ## as a browser's fetch reports back, and hands out at most 6 downloads at once.
     ##
     ## puppy comes with the binding (wgrender.nimble requires it; in a checkout,
     ## nimble install -d), and is only compiled in with this define. It uses what the
-    ## system has, so nothing ships beside the program: WinHTTP and the system's certificates on Windows, Apple's URL loading
-    ## on macOS, and libcurl on Linux, which every desktop has (a program built with the
-    ## define won't start without it).
-    request.fetchDone(download(url, destPath))
+    ## system has, so nothing ships beside the program: WinHTTP and the system's
+    ## certificates on Windows, Apple's URL loading on macOS, and libcurl on Linux,
+    ## which every desktop has (a program built with the define won't start without it).
+    let job = FetchJob(request: request, url: url, destPath: destPath)
+    when compileOption("threads"):
+      var i = 0
+      while i < fetchThreads.len:
+        if running(fetchThreads[i][]):
+          inc i
+        else:
+          joinThread(fetchThreads[i][])
+          fetchThreads.del(i)
+      let thread = new Thread[FetchJob]
+      createThread(thread[], answer, job)
+      fetchThreads.add thread
+    else:
+      answer(job) # no threads: the download holds up the frame it runs in
 
 proc needsFetcher(source: string) =
   ## An http(s) URL on desktop needs a downloader, as wgrender links none. Every way one
