@@ -214,7 +214,7 @@ proc frame(dt, tickFraction: float) =
   g.logo2d.draw()
   drawText("wgrender custom shaders (Nim): toon, dissolve, water, sprite effects", 12, 12, 20,
            ColorRaywhite)
-  drawText("1 sun, 2 point light, ESC quit", 12, 40, 16, ColorLightgray)
+  drawText("1 sun, 2 point light" & (when defined(emscripten): "" else: ", ESC quit"), 12, 40, 16, ColorLightgray)
   endFrame()
 
 when isMainModule:

@@ -80,7 +80,7 @@ proc frame(dt, tickFraction: float) =
            24, 80, 18, ColorSkyblue)
   drawText(if click.isNone: "click: loading..." else: "click: ready (ogg)",
            24, 110, 18, ColorLime)
-  drawText("[SPACE] play click   [M] toggle music   [S] stall 300 ms   [ESC] quit",
+  drawText("[SPACE] play click   [M] toggle music   [S] stall 300 ms" & (when defined(emscripten): "" else: "   [ESC] quit"),
            24, 150, 16, ColorLightgray)
 
   drawFps(24, 12)

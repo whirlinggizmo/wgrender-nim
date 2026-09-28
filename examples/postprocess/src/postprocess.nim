@@ -181,7 +181,7 @@ proc frame(dt, tickFraction: float) =
   drawText(&"[1] vignette {g.vignetteOn.onOff}   [2] scanlines {g.scanlinesOn.onOff}   " &
            &"effects: {getEffectCount()}", 12, 64, 16, ColorLightgray)
   drawText(&"UP/DOWN strength {g.strength:.2f}   SPACE " &
-           (if g.breathing: "stop breathing" else: "breathe") & "   O camera   ESC quit",
+           (if g.breathing: "stop breathing" else: "breathe") & "   O camera" & (when defined(emscripten): "" else: "   ESC quit"),
            12, 86, 16, ColorGray)
   endFrame()
 

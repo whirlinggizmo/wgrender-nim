@@ -105,7 +105,7 @@ proc frame(dt, tickFraction: float) =
   g.scene.draw()
   drawText("wgrender generated meshes (Nim): plane, cube, sphere, cylinder, cone, capsule, torus",
            12, 36, 20, ColorRaywhite)
-  drawText((if g.orbit: "O: stop the camera   ESC: quit" else: "O: turn the camera   ESC: quit"),
+  drawText((if g.orbit: "O: stop the camera" else: "O: turn the camera") & (when defined(emscripten): "" else: "   ESC: quit"),
            12, 64, 16, ColorLightgray)
   endFrame()
 

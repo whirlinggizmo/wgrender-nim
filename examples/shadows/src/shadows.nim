@@ -186,7 +186,7 @@ proc frame(dt, tickFraction: float) =
            &"distance {int(round(g.distance))}   bias {g.bias:.1f} texels", 12, 64, 16, ColorLightgray)
   drawText(&"[S] strength {g.strength:.2f}   [T] tint {TintNames[g.tintIndex]}", 12, 86, 16,
            ColorLightgray)
-  drawText("UP/DOWN distance   [ ] bias   M map size   O camera   ESC quit", 12, 108, 16, ColorGray)
+  drawText("UP/DOWN distance   [ ] bias   M map size   O camera" & (when defined(emscripten): "" else: "   ESC quit"), 12, 108, 16, ColorGray)
   drawText("left ball casts nothing; right ball receives nothing", 12, 130, 16, ColorGray)
   endFrame()
 

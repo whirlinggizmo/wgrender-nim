@@ -25,7 +25,8 @@ proc frame(dt, tickFraction: float) =
   drawCircle((mouse.x.float, mouse.y.float), 8, ColorMaroon)
 
   drawText("wgrender hello (Nim)", 40, 360, 32, ColorDarkgray)
-  drawText("press ESC to quit", 40, 410, 16, ColorGray)
+  when not defined(emscripten): # the quit key's hint, as the key: desktop only
+    drawText("press ESC to quit", 40, 410, 16, ColorGray)
   drawFps(40, 12)
   endFrame()
 

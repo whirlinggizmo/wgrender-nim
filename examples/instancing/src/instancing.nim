@@ -144,7 +144,7 @@ proc frame(dt, tickFraction: float) =
            12, 36, 20, ColorRaywhite)
   drawText($FieldCount & " cubes, " &
            (if g.ownMaterials: "a material each (one draw each)" else: "one material (one draw)") &
-           "   SPACE toggles   ESC quit", 12, 64, 16, ColorLightgray)
+           "   SPACE toggles" & (when defined(emscripten): "" else: "   ESC quit"), 12, 64, 16, ColorLightgray)
   endFrame()
 
   let keys = getKeyboardState()

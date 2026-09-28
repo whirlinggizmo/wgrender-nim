@@ -69,7 +69,7 @@ proc frame(dt, tickFraction: float) =
            elif musicOn: "music: playing (mp3, looping)"
            else: "music: paused",
            24, 80, 18, ColorSkyblue)
-  drawText("[M] toggle music   [ESC] quit", 24, 150, 16, ColorLightgray)
+  drawText("[M] toggle music" & (when defined(emscripten): "" else: "   [ESC] quit"), 24, 150, 16, ColorLightgray)
 
   drawFps(24, 12)
   endFrame()
