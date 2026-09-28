@@ -71,7 +71,7 @@ def find_wgrender():
     sibling = ROOT.parent / 'wgrender-c'
     if (sibling / 'include/wgr.h').is_file():
         return sibling.resolve()
-    return (ROOT / 'project/lib/wgrender-c').resolve()
+    return (ROOT / 'src/wgr/wgrender-c').resolve()
 
 
 def find_clang():

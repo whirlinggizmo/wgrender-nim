@@ -8,8 +8,8 @@
 ## directory is global.
 ##
 ## Which wgrender: -d:wgrenderDir=<path>, else WGRENDER_DIR, else a wgrender-c checkout
-## beside this repository, else the pinned submodule (in the repository, or in the
-## package nimble installed: installDirs carries it).
+## beside this repository, else the pinned submodule (src/wgr/wgrender-c: under srcDir,
+## so the package nimble installs carries it too).
 ##
 ## Which target: -d:emscripten (the examples' web build) is the web, with BACKEND,
 ## WEB_THREADS and WEB_DEBUG from the environment as for wgrender's own web build;
@@ -42,9 +42,8 @@ proc findWgrender(): string {.compileTime.} =
   var candidates: seq[string]
   if wgrenderDirDefine.len > 0: candidates.add wgrenderDirDefine.slashes
   if getEnv("WGRENDER_DIR").len > 0: candidates.add getEnv("WGRENDER_DIR").slashes
-  candidates.add [repo.parentDir() / "wgrender-c", repo / "project" / "lib" / "wgrender-c",
-                  # installed by nimble: src/ is the package root, the submodule beside it
-                  here.parentDir() / "project" / "lib" / "wgrender-c"]
+  # the submodule is src/wgr/wgrender-c, so wgr/wgrender-c in the package nimble installs too
+  candidates.add [repo.parentDir() / "wgrender-c", here / "wgrender-c"]
   for dir in candidates:
     if fileExists(dir / "include" / "wgr.h"):
       return dir.normalizedPath

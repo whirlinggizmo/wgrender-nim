@@ -5,10 +5,18 @@ author        = "Rob Knopf"
 description   = "wgrender for Nim"
 license       = "MIT"
 srcDir        = "src"
-# The binding, and wgrender itself (the submodule): src/wgr/internal/build.nim compiles
-# wgrender into the program from its sources, so the package has to carry them.
-installFiles  = @["wgr.nim"]
-installDirs   = @["wgr", "project"]
+# The package is src/: the binding, and wgrender itself (the submodule, src/wgr/wgrender-c),
+# since src/wgr/internal/build.nim compiles wgrender into the program from its sources.
+# Of wgrender, only what that takes: build.json, include/, src/, deps/ (less clay, which
+# only its examples use), shaders/ (wgr.glsl, for a program's own shaders) and LICENSE.
+# nimble leaves out every tests/ itself.
+skipDirs      = @["src/wgr/wgrender-c/bench",
+                   "src/wgr/wgrender-c/build",
+                   "src/wgr/wgrender-c/cmake",
+                   "src/wgr/wgrender-c/deps/clay",
+                   "src/wgr/wgrender-c/docs",
+                   "src/wgr/wgrender-c/examples",
+                   "src/wgr/wgrender-c/tools"]
 
 requires "nim >= 2.2.0"
 # httpFetcher (-d:wgrIncludeFetcher): imported only with that define, so a program

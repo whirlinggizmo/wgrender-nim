@@ -59,7 +59,7 @@ jobs:
       - name: The system headers and libraries wgrender needs (GL, X11, ALSA)
         run: |
           sudo apt-get update
-          python3 project/lib/wgrender-c/tools/deps.py install
+          python3 src/wgr/wgrender-c/tools/deps.py install
 
       - uses: jiro4989/setup-nim-action@v2
         with:

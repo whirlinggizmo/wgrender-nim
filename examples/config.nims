@@ -39,14 +39,14 @@
 #   1. WGRENDER_DIR=/path/to/wgrender
 #   2. ../wgrender-c beside this repository: a checkout you are working on, so a change
 #      there is tried here without pushing it and moving the pin
-#   3. project/lib/wgrender-c, the pinned submodule, which is what a clone has
+#   3. src/wgr/wgrender-c, the pinned submodule, which is what a clone has
 
 import std/[os, strutils]
 
 const
   repoDir = currentSourcePath().parentDir() / ".."
   wgrenderSibling = repoDir / "../wgrender-c"
-  wgrenderSubmodule = repoDir / "project/lib/wgrender-c"
+  wgrenderSubmodule = repoDir / "src/wgr/wgrender-c"
 
 # The example being built: a task (nim build) runs in its directory, and compiling
 # names its src/<name>.nim, wherever that is run from, making src/ the project's.

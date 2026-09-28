@@ -16,6 +16,8 @@ src/wgr.nim              the binding (`import wgr`): re-exports src/wgr/<header>
 src/wgr/raw.nim          the whole C API as is, generated from wgrender's headers
 src/wgr/internal/        not the API: build.nim compiles wgrender into the program from its
                          build.json; convert.nim, handles and vectors to and from C
+src/wgr/wgrender-c/      wgrender, pinned (git submodule); under src/ so the package
+                         nimble installs carries it
 tests/tcalls.nim         how the calls are written, and that a wrong handle kind doesn't compile
 tests/tevents.nim        events through a running wgrender (headless)
 examples/<name>/         a port of each of wgrender's examples/<name>.c (all but clay, which
@@ -24,7 +26,6 @@ examples/<name>/         a port of each of wgrender's examples/<name>.c (all but
 examples/config.nims     every example's build (nim build desktop|web|all, serve, webcheck,
                          clean); one that needs more adds a config.nims of its own
 examples/shared/         code more than one example uses (ui/ui_widgets.nim)
-project/lib/wgrender-c   wgrender, pinned (git submodule)
 tools/benchmarks.py      this port against the C -> docs/benchmarks.md
 tools/gen_raw.py         writes raw.nim from wgrender's headers (clang's AST of them)
 tools/coverage.py        raw.nim checked against wgrender's headers (CI)

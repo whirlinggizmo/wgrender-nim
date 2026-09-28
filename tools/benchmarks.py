@@ -33,7 +33,7 @@ def find_wgrender():
         return pathlib.Path(os.environ['WGRENDER_DIR']).resolve(), 'WGRENDER_DIR'
     if (ROOT / '../wgrender-c/include/wgr.h').is_file():
         return (ROOT / '../wgrender-c').resolve(), 'sibling checkout'
-    return (ROOT / 'project/lib/wgrender-c').resolve(), 'submodule'
+    return (ROOT / 'src/wgr/wgrender-c').resolve(), 'submodule'
 
 
 WGRENDER, SOURCE = find_wgrender()

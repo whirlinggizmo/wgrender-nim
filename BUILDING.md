@@ -18,7 +18,7 @@ than it would be linking a prebuilt `libwgrender.a`.
 - Python 3 for `nim serve` and the web page (`tools/serve.py` and
   `tools/webdeploy.py`); emsdk brings one
 - on Linux, the system's GL, X11 and ALSA dev packages, which sokol links:
-  `python3 project/lib/wgrender-c/tools/deps.py install` (apt, dnf or pacman)
+  `python3 src/wgr/wgrender-c/tools/deps.py install` (apt, dnf or pacman)
 
 ## Build an example
 
@@ -90,7 +90,7 @@ In this order:
 1. `-d:wgrenderDir=<path>`, or `WGRENDER_DIR`
 2. a `../wgrender-c` checkout beside this one, so a change there is tried here without
    pushing it and moving the pin
-3. `project/lib/wgrender-c`, the pinned submodule: what a clone has, and what
+3. `src/wgr/wgrender-c`, the pinned submodule: what a clone has, and what
    `nimble install` puts in the package beside the binding
 
 `-d:wgrPrebuilt` links a library wgrender built instead of compiling it in, for working
