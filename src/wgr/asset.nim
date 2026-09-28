@@ -179,6 +179,9 @@ proc setFetcher*(fetch: proc (request: AssetRequest; url, destPath: string) {.cl
   ## desktop downloads: wgrender ships no HTTP client, so it asks this to fetch `url`
   ## into `destPath` and call fetchDone when it has; nil goes back to none. The program's
   ## stays: -d:wgrIncludeFetcher's httpFetcher won't replace it, whichever came first.
+  ## `destPath` is where the download is written until it is whole: wgrender moves it
+  ## into place on success and deletes it otherwise, so a failed or interrupted download
+  ## never leaves half a file, nor costs the copy that was there.
   assetFetcher = fetch
   fetcherInstalled = fetch != nil
   wgr_asset_set_fetcher(if fetch != nil: fetchTrampoline else: nil, nil)
