@@ -1,5 +1,12 @@
 # wgrender-nim
 
+> **Archived (2026-10-02).** Not maintained: it stays as it was, its `src/wgr/wgrender-c`
+> submodule pinned to wgrender-c `7b39581`, an API wgrender-c's main has since moved past
+> (callbacks became polled tasks). The browser examples below keep running. For a binding
+> that is maintained, and the rules a new one follows, see
+> [wgrender-c](https://github.com/whirlinggizmo/wgrender-c) and its
+> [`bindings/haxe`](https://github.com/whirlinggizmo/wgrender-c/tree/main/bindings/haxe).
+
 [wgrender](https://github.com/whirlinggizmo/wgrender-c) for Nim: the whole C API in
 `wgr/raw`, generated from wgrender's headers, and a Nim layer over it (`wgr`) that
 wraps what the examples use, in Nim's own types; wgrender's Nim entry in the
