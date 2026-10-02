@@ -2,7 +2,7 @@
 
 > **Archived (2026-10-02).** Not maintained: it stays as it was, its `src/wgr/wgrender-c`
 > submodule pinned to wgrender-c `7b39581`, an API wgrender-c's main has since moved past
-> (callbacks became polled tasks). The browser examples below keep running. For a binding
+> (callbacks became polled tasks). Its browser examples are unpublished. For a binding
 > that is maintained, and the rules a new one follows, see
 > [wgrender-c](https://github.com/whirlinggizmo/wgrender-c) and its
 > [`bindings/haxe`](https://github.com/whirlinggizmo/wgrender-c/tree/main/bindings/haxe).
@@ -12,8 +12,8 @@
 wraps what the examples use, in Nim's own types; wgrender's Nim entry in the
 cross-binding benchmarks.
 
-**The examples run in a browser: https://whirlinggizmo.github.io/wgrender-nim/**,
-published from `main` by `.github/workflows/pages.yml` (`tools/site.py` builds the site).
+`.github/workflows/pages.yml` published the examples to a site (`tools/site.py` built
+it); the site is unpublished since the repository was archived.
 
 ```
 wgrender.nimble          the package: srcDir src, `import wgr`
